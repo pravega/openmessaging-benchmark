@@ -18,7 +18,6 @@
  */
 package io.openmessaging.benchmark.driver.pulsar;
 
-import java.util.function.Consumer;
 import org.apache.pulsar.client.api.Consumer;
 
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
