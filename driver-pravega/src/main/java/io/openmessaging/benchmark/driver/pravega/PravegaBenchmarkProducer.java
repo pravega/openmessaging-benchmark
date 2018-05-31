@@ -19,8 +19,13 @@
 package io.openmessaging.benchmark.driver.pravega;
 
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
+import io.pravega.client.ClientConfig;
+import io.pravega.client.ClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
+import io.pravega.client.stream.EventWriterConfig;
+import io.pravega.client.stream.impl.JavaSerializer;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class PravegaBenchmarkProducer implements BenchmarkProducer {
@@ -30,8 +35,18 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     public PravegaBenchmarkProducer(EventStreamWriter pravegaProducer) {
         this.producer = pravegaProducer;
     }
+
+    public PravegaBenchmarkProducer(String streamName, ClientConfig config) {
+        this(ClientFactory.withScope("benchmark", config)
+        .createEventWriter(streamName, new JavaSerializer<>(), EventWriterConfig.builder().build()));
+
+    }
+
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
+        if (!key.isPresent()) {
+            key = Optional.of(UUID.randomUUID().toString());
+        }
         return producer.writeEvent(key.get(), payload);
     }
 

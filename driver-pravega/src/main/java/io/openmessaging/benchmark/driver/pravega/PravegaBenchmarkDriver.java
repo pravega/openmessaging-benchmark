@@ -18,12 +18,14 @@
  */
 package io.openmessaging.benchmark.driver.pravega;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.BenchmarkDriver;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.pravega.client.ClientConfig;
-import io.pravega.client.ClientFactory;
 import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.StreamConfiguration;
@@ -38,8 +40,14 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
-        config = ClientConfig.builder().build();
+        config = readConfig(configurationFile);
         manager = StreamManager.create(config);
+    }
+
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static ClientConfig readConfig(File configurationFile) throws IOException {
+        return mapper.readValue(configurationFile, ClientConfig.class);
     }
 
     @Override
@@ -49,6 +57,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public CompletableFuture<Void> createTopic(String topic, int partitions) {
+        manager.createScope("benchmark");
          manager.createStream("benchmark", topic,
                 StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(partitions)).build());
          return CompletableFuture.completedFuture(null);
@@ -56,16 +65,18 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
-        return null;
+        BenchmarkProducer producer = new PravegaBenchmarkProducer(topic, config);
+        return CompletableFuture.completedFuture(producer);
     }
 
     @Override
     public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback) {
-        return null;
+        BenchmarkConsumer consumer = new PravegaBenchmarkCounsumer(topic, subscriptionName, consumerCallback, config);
+        return CompletableFuture.completedFuture(consumer);
     }
 
     @Override
     public void close() throws Exception {
-
+        manager.close();
     }
 }

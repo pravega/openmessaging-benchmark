@@ -22,19 +22,6 @@ name: Pravega
 driverClass: io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver
 
 # Pravega client-specific configuration
-replicationFactor: 3
 
-topicConfig: |
-  min.insync.replicas=2
+controllerURI: tcp://localhost:9090
 
-commonConfig: |
-  bootstrap.servers=localhost:9092
-
-producerConfig: |
-  acks=all
-  linger.ms=1
-  batch.size=131072
-
-consumerConfig: |
-  auto.offset.reset=earliest
-  enable.auto.commit=false
