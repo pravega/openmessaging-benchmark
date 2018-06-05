@@ -23,6 +23,7 @@ import io.pravega.client.ClientConfig;
 import io.pravega.client.ClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
 import io.pravega.client.stream.EventWriterConfig;
+import io.pravega.client.stream.impl.ByteArraySerializer;
 import io.pravega.client.stream.impl.JavaSerializer;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,7 +39,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     public PravegaBenchmarkProducer(String streamName, ClientConfig config) {
         this(ClientFactory.withScope("benchmark", config)
-        .createEventWriter(streamName, new JavaSerializer<>(), EventWriterConfig.builder().build()));
+        .createEventWriter(streamName, new ByteArraySerializer(), EventWriterConfig.builder().build()));
 
     }
 

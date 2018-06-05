@@ -29,6 +29,7 @@ import io.pravega.client.stream.ReaderConfig;
 import io.pravega.client.stream.ReaderGroupConfig;
 import io.pravega.client.stream.ReinitializationRequiredException;
 import io.pravega.client.stream.Stream;
+import io.pravega.client.stream.impl.ByteArraySerializer;
 import io.pravega.client.stream.impl.JavaSerializer;
 import java.io.Serializable;
 import java.util.UUID;
@@ -49,7 +50,7 @@ public class PravegaBenchmarkCounsumer implements BenchmarkConsumer {
                                                                                 .build());
         reader = ClientFactory.withScope("benchmark", config)
                               .createReader(UUID.randomUUID().toString(), subscriptionName,
-                                      new JavaSerializer<>(), ReaderConfig.builder().build());
+                                      new ByteArraySerializer(), ReaderConfig.builder().build());
         this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
            while (!closed) {
@@ -61,7 +62,7 @@ public class PravegaBenchmarkCounsumer implements BenchmarkConsumer {
                } catch (ReinitializationRequiredException e) {
                    reader = ClientFactory.withScope("benchmark", config)
                                          .createReader(UUID.randomUUID().toString(), subscriptionName,
-                                                 new JavaSerializer<>(), ReaderConfig.builder().build());
+                                                 new ByteArraySerializer(), ReaderConfig.builder().build());
                }
            }
         });
