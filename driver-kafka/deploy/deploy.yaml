@@ -24,17 +24,23 @@
   tasks:
     - command: >
         tuned-adm profile latency-performance
-    - name: Format block device
+    - name: Format disks
       filesystem:
-        fstype: xfs
-        dev: /dev/nvme0n1
-    - name: Create and mount disks
+         fstype: xfs
+         dev: '{{ item }}'
+      with_items:
+        - '/dev/nvme0n1'
+        - '/dev/nvme1n1'
+    - name: Mount disks
       mount:
-        path: /mnt/data
-        src: /dev/nvme0n1
+        path: "{{ item.path }}"
+        src: "{{ item.src }}"
         fstype: xfs
         opts: defaults,noatime,nodiscard
         state: mounted
+      with_items:
+        - { path: "/mnt/data-1", src: "/dev/nvme0n1" }
+        - { path: "/mnt/data-2", src: "/dev/nvme1n1" }
 
 - name: Kafka setup
   hosts: all
@@ -48,12 +54,15 @@
           - java
           - sysstat
           - vim
+          - chrony
     - file: path=/opt/kafka state=absent
     - file: path=/opt/kafka state=directory
     - set_fact:
-        zookeeperServers: "{{ groups['zookeeper']|map('extract', hostvars, ['ansible_default_ipv4', 'address'])|map('regex_replace', '(.*)', '\\1:2181') | join(',') }}"
-        boostrapServers: "{{ hostvars[groups['kafka'][0]].private_ip }}:9092"
-        kafkaVersion: "1.0.0"
+        zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
+        boostrapServers: "{{ groups['kafka'] | map('extract', hostvars, ['private_ip']) | map('regex_replace', '^(.*)$', '\\1:9092') | join(',') }}"
+        kafkaVersion: "2.3.0"
+    - debug:
+        msg: "zookeeper servers: {{ zookeeperServers }}\nboostrap servers: {{ boostrapServers }}"
     - name: Download Kafka package
       unarchive:
         src: http://mirrors.ocf.berkeley.edu/apache/kafka/{{ kafkaVersion }}/kafka_2.11-{{ kafkaVersion }}.tgz
@@ -66,7 +75,7 @@
       shell: |
         echo 'LANG=en_US.utf-8
               LC_ALL=en_US.utf-8' > /etc/environment
-        
+
 - name: Setup ZooKeeper
   hosts: zookeeper
   connection: ssh
@@ -110,6 +119,20 @@
         daemon_reload: yes
         name: "kafka"
 
+- name: Chrony setup
+  hosts: client
+  connection: ssh
+  become: true
+  tasks:
+    - name: Set up chronyd
+      template:
+        src: "templates/chrony.conf"
+        dest: "/etc/chrony.conf"
+    - systemd:
+        state: restarted
+        daemon_reload: yes
+        name: "chronyd"
+
 - name: Setup Benchmark client
   hosts: client
   connection: ssh
@@ -129,7 +152,7 @@
 
     - name: Configure URL
       lineinfile:
-         dest: /opt/benchmark/driver-kafka/kafka.yaml
+         dest: '{{ item }}'
          regexp: '^  bootstrap.servers='
          line: '  bootstrap.servers={{ boostrapServers }}'
       with_items: '{{ drivers_list.stdout_lines }}'

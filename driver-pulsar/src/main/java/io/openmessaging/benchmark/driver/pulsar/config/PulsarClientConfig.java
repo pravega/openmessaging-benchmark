@@ -18,7 +18,7 @@
  */
 package io.openmessaging.benchmark.driver.pulsar.config;
 
-import org.apache.pulsar.common.naming.DestinationDomain;
+import org.apache.pulsar.common.naming.TopicDomain;
 
 public class PulsarClientConfig {
     public String serviceUrl;
@@ -31,7 +31,9 @@ public class PulsarClientConfig {
 
     public String namespacePrefix;
 
-    public DestinationDomain topicType = DestinationDomain.persistent;
+    public String clusterName;
+
+    public TopicDomain topicType = TopicDomain.persistent;
 
     public PersistenceConfiguration persistence = new PersistenceConfiguration();
 
@@ -41,5 +43,18 @@ public class PulsarClientConfig {
         public int ackQuorum = 2;
 
         public boolean deduplicationEnabled = false;
+    }
+
+    public boolean tlsAllowInsecureConnection = false;
+
+    public boolean tlsEnableHostnameVerification = false;
+
+    public String tlsTrustCertsFilePath;
+
+    public AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+
+    public static class AuthenticationConfiguration {
+        public String plugin;
+        public String data;
     }
 }

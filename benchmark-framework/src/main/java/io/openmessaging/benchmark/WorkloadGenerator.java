@@ -18,6 +18,7 @@
  */
 package io.openmessaging.benchmark;
 
+import io.openmessaging.benchmark.utils.RandomGenerator;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -273,12 +274,14 @@ public class WorkloadGenerator implements AutoCloseable {
 
     private void createConsumers(List<String> topics) throws IOException {
         ConsumerAssignment consumerAssignment = new ConsumerAssignment();
-        for (int i = 0; i < workload.subscriptionsPerTopic; i++) {
-            String subscriptionName = String.format("sub-%03d", i);
 
-            for (int j = 0; j < workload.consumerPerSubscription; j++) {
-                topics.forEach(topic -> consumerAssignment.topicsSubscriptions
-                        .add(new TopicSubscription(topic, subscriptionName)));
+        for(String topic: topics){
+            for(int i = 0; i < workload.subscriptionsPerTopic; i++){
+                String subscriptionName = String.format("sub-%03d-%s", i, RandomGenerator.getRandomString());
+                for (int j = 0; j < workload.consumerPerSubscription; j++) {
+                    consumerAssignment.topicsSubscriptions
+                        .add(new TopicSubscription(topic, subscriptionName));
+                }
             }
         }
 
@@ -359,7 +362,7 @@ public class WorkloadGenerator implements AutoCloseable {
         // Print report stats
         long oldTime = System.nanoTime();
 
-        long testEndTime = startTime + unit.toNanos(testDurations);
+        long testEndTime = testDurations > 0 ? startTime + unit.toNanos(testDurations) : Long.MAX_VALUE;
 
         TestResult result = new TestResult();
         result.workload = workload.name;
@@ -439,14 +442,14 @@ public class WorkloadGenerator implements AutoCloseable {
                 result.aggregatedPublishLatency9999pct = agg.publishLatency.getValueAtPercentile(99.99) / 1000.0;
                 result.aggregatedPublishLatencyMax = agg.publishLatency.getMaxValue() / 1000.0;
 
-                result.aggregatedEndToEndLatencyAvg = agg.endToEndLatency.getMean();
-                result.aggregatedEndToEndLatency50pct = agg.endToEndLatency.getValueAtPercentile(50);
-                result.aggregatedEndToEndLatency75pct = agg.endToEndLatency.getValueAtPercentile(75);
-                result.aggregatedEndToEndLatency95pct = agg.endToEndLatency.getValueAtPercentile(95);
-                result.aggregatedEndToEndLatency99pct = agg.endToEndLatency.getValueAtPercentile(99);
-                result.aggregatedEndToEndLatency999pct = agg.endToEndLatency.getValueAtPercentile(99.9);
-                result.aggregatedEndToEndLatency9999pct = agg.endToEndLatency.getValueAtPercentile(99.99);
-                result.aggregatedEndToEndLatencyMax = agg.endToEndLatency.getMaxValue();
+                result.aggregatedEndToEndLatencyAvg = agg.endToEndLatency.getMean()  / 1000.0;
+                result.aggregatedEndToEndLatency50pct = agg.endToEndLatency.getValueAtPercentile(50)  / 1000.0;
+                result.aggregatedEndToEndLatency75pct = agg.endToEndLatency.getValueAtPercentile(75)  / 1000.0;
+                result.aggregatedEndToEndLatency95pct = agg.endToEndLatency.getValueAtPercentile(95)  / 1000.0;
+                result.aggregatedEndToEndLatency99pct = agg.endToEndLatency.getValueAtPercentile(99)  / 1000.0;
+                result.aggregatedEndToEndLatency999pct = agg.endToEndLatency.getValueAtPercentile(99.9)  / 1000.0;
+                result.aggregatedEndToEndLatency9999pct = agg.endToEndLatency.getValueAtPercentile(99.99)  / 1000.0;
+                result.aggregatedEndToEndLatencyMax = agg.endToEndLatency.getMaxValue()  / 1000.0;
 
                 agg.publishLatency.percentiles(100).forEach(value -> {
                     result.aggregatedPublishLatencyQuantiles.put(value.getPercentile(),

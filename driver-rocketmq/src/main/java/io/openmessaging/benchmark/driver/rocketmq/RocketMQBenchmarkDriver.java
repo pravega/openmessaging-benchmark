@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 public class RocketMQBenchmarkDriver implements BenchmarkDriver {
     private DefaultMQAdminExt rmqAdmin;
     private RocketMQClientConfig rmqClientConfig;
+    DefaultMQProducer rmqProducer;
     @Override
     public void initialize(final File configurationFile, final StatsLogger statsLogger) throws IOException {
         this.rmqClientConfig = readConfig(configurationFile);
@@ -61,6 +62,7 @@ public class RocketMQBenchmarkDriver implements BenchmarkDriver {
         } catch (MQClientException e) {
             log.error("Start the RocketMQ admin tool failed.");
         }
+
     }
 
     @Override
@@ -94,14 +96,26 @@ public class RocketMQBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(final String topic) {
-        DefaultMQProducer rmqProducer = new DefaultMQProducer("ProducerGroup_" + getRandomString());
-        rmqProducer.setNamesrvAddr(this.rmqClientConfig.namesrvAddr);
-        rmqProducer.setInstanceName("ProducerInstance" + getRandomString());
-        try {
-            rmqProducer.start();
-        } catch (MQClientException e) {
-            log.error("Failed to start the created producer instance.", e);
+        if (rmqProducer == null) {
+            rmqProducer = new DefaultMQProducer("ProducerGroup_" + getRandomString());
+            rmqProducer.setNamesrvAddr(this.rmqClientConfig.namesrvAddr);
+            rmqProducer.setInstanceName("ProducerInstance" + getRandomString());
+            if(null != this.rmqClientConfig.vipChannelEnabled){
+                rmqProducer.setVipChannelEnabled(this.rmqClientConfig.vipChannelEnabled);
+            }
+            if(null != this.rmqClientConfig.maxMessageSize){
+                rmqProducer.setMaxMessageSize(this.rmqClientConfig.maxMessageSize);
+            }
+            if(null != this.rmqClientConfig.compressMsgBodyOverHowmuch){
+                rmqProducer.setCompressMsgBodyOverHowmuch(this.rmqClientConfig.compressMsgBodyOverHowmuch);
+            }
+            try {
+                rmqProducer.start();
+            } catch (MQClientException e) {
+                log.error("Failed to start the created producer instance.", e);
+            }
         }
+
         return CompletableFuture.completedFuture(new RocketMQBenchmarkProducer(rmqProducer, topic));
     }
 
@@ -111,6 +125,9 @@ public class RocketMQBenchmarkDriver implements BenchmarkDriver {
         DefaultMQPushConsumer rmqConsumer = new DefaultMQPushConsumer(subscriptionName);
         rmqConsumer.setNamesrvAddr(this.rmqClientConfig.namesrvAddr);
         rmqConsumer.setInstanceName("ConsumerInstance" + getRandomString());
+        if(null != this.rmqClientConfig.vipChannelEnabled){
+            rmqConsumer.setVipChannelEnabled(this.rmqClientConfig.vipChannelEnabled);
+        }
         try {
             rmqConsumer.subscribe(topic, "*");
             rmqConsumer.registerMessageListener((MessageListenerConcurrently) (msgs, context) -> {
@@ -129,6 +146,9 @@ public class RocketMQBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public void close() throws Exception {
+        if (this.rmqProducer != null) {
+            this.rmqProducer.shutdown();
+        }
         this.rmqAdmin.shutdown();
     }
 

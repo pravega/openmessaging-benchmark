@@ -26,13 +26,20 @@ client:
   httpUrl: http://localhost:8080
   ioThreads: 8
   connectionsPerBroker: 8
-  namespacePrefix: benchmark/local/ns
+  clusterName: local
+  namespacePrefix: benchmark/ns
   topicType: persistent
   persistence:
     ensembleSize: 3
     writeQuorum: 3
     ackQuorum: 2
     deduplicationEnabled: false
+  tlsAllowInsecureConnection: false
+  tlsEnableHostnameVerification: false
+  tlsTrustCertsFilePath:
+  authentication:
+    plugin:
+    data:
 
 # Producer configuration
 producer:
