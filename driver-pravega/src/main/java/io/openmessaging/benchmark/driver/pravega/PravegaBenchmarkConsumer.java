@@ -21,10 +21,12 @@ package io.openmessaging.benchmark.driver.pravega;
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.pravega.client.ClientConfig;
-import io.pravega.client.ClientFactory;
+import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.stream.*;
 import io.pravega.client.stream.impl.ByteArraySerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -32,31 +34,39 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
+    private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
 
     private final ExecutorService executor;
-    private EventStreamReader reader;
-    private boolean closed = false;
+    private final EventStreamReader<byte[]> reader;
+    private final EventStreamClientFactory clientFactory;
+    private volatile boolean closed = false;    // TODO: use atomic boolean?
 
     public PravegaBenchmarkConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback, ClientConfig config, String scopeName) {
-        ReaderGroupManager.withScope(scopeName, config)
-                          .createReaderGroup(subscriptionName, ReaderGroupConfig.builder()
-                                                                                .stream(Stream.of(scopeName, topic))
-                                                                                .build());
-        reader = ClientFactory.withScope(scopeName, config)
-                              .createReader(UUID.randomUUID().toString(), subscriptionName,
-                                      new ByteArraySerializer(), ReaderConfig.builder().build());
+        log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, topic={}", subscriptionName, topic);
+        final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
+                .stream(Stream.of(scopeName, topic))
+                .build();
+        try (ReaderGroupManager readerGroupManager = ReaderGroupManager.withScope(scopeName, config)) {
+            readerGroupManager.createReaderGroup(subscriptionName, readerGroupConfig);
+        }
+        clientFactory = EventStreamClientFactory.withScope(scopeName, config);
+        reader = clientFactory.createReader(
+                UUID.randomUUID().toString(),
+                subscriptionName,
+                new ByteArraySerializer(),
+                ReaderConfig.builder().build());
         this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
            while (!closed) {
                try {
-                   EventRead<byte[]> record;
-                   if ((record = reader.readNextEvent(1000))!= null) {
+                   EventRead<byte[]> record = reader.readNextEvent(1000);
+                   if (record.getEvent() != null) {
+                       // TODO: must get publish time from event
                        consumerCallback.messageReceived(record.getEvent(), System.currentTimeMillis());
                    }
                } catch (ReinitializationRequiredException e) {
-                   reader = ClientFactory.withScope(scopeName, config)
-                                         .createReader(UUID.randomUUID().toString(), subscriptionName,
-                                                 new ByteArraySerializer(), ReaderConfig.builder().build());
+                   log.error("Exception during read", e);
+                   throw e;
                }
            }
         });
@@ -65,8 +75,9 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
     @Override
     public void close() throws Exception {
         closed = true;
-        reader.close();
         this.executor.shutdown();
         this.executor.awaitTermination(1, TimeUnit.MINUTES);
+        reader.close();
+        clientFactory.close();
     }
 }

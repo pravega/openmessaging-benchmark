@@ -33,8 +33,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import org.apache.bookkeeper.stats.StatsLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PravegaBenchmarkDriver implements BenchmarkDriver {
+    private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
+
     private ClientConfig config;
     private String scopeName;
     private StreamManager manager;
@@ -57,6 +61,13 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
                 .build();
     }
 
+    /**
+     * Clean Pravega stream name to only allow alpha-numeric and "-".
+     */
+    private String cleanName(String name) {
+        return name.replaceAll("[^A-Za-z0-9-]", "");
+    }
+
     @Override
     public String getTopicNamePrefix() {
         return "pravega-benchmark";
@@ -64,6 +75,8 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public CompletableFuture<Void> createTopic(String topic, int partitions) {
+        topic = cleanName(topic);
+        log.info("createTopic: topic={}, partitions={}", topic, partitions);
 //        manager.createScope(scopeName);
         manager.createStream(scopeName, topic,
                 StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(partitions)).build());
@@ -72,12 +85,14 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
+        topic = cleanName(topic);
         BenchmarkProducer producer = new PravegaBenchmarkProducer(topic, config, scopeName);
         return CompletableFuture.completedFuture(producer);
     }
 
     @Override
     public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback) {
+        topic = cleanName(topic);
         BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, subscriptionName, consumerCallback, config, scopeName);
         return CompletableFuture.completedFuture(consumer);
     }
