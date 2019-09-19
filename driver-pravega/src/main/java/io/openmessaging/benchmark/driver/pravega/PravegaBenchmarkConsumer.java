@@ -23,15 +23,9 @@ import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.ClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
-import io.pravega.client.stream.EventRead;
-import io.pravega.client.stream.EventStreamReader;
-import io.pravega.client.stream.ReaderConfig;
-import io.pravega.client.stream.ReaderGroupConfig;
-import io.pravega.client.stream.ReinitializationRequiredException;
-import io.pravega.client.stream.Stream;
+import io.pravega.client.stream.*;
 import io.pravega.client.stream.impl.ByteArraySerializer;
-import io.pravega.client.stream.impl.JavaSerializer;
-import java.io.Serializable;
+
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,12 +37,12 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
     private EventStreamReader reader;
     private boolean closed = false;
 
-    public PravegaBenchmarkConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback, ClientConfig config) {
-        ReaderGroupManager.withScope("benchmark", config)
+    public PravegaBenchmarkConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback, ClientConfig config, String scopeName) {
+        ReaderGroupManager.withScope(scopeName, config)
                           .createReaderGroup(subscriptionName, ReaderGroupConfig.builder()
-                                                                                .stream(Stream.of("benchmark/" + topic))
+                                                                                .stream(Stream.of(scopeName, topic))
                                                                                 .build());
-        reader = ClientFactory.withScope("benchmark", config)
+        reader = ClientFactory.withScope(scopeName, config)
                               .createReader(UUID.randomUUID().toString(), subscriptionName,
                                       new ByteArraySerializer(), ReaderConfig.builder().build());
         this.executor = Executors.newSingleThreadExecutor();
@@ -60,7 +54,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
                        consumerCallback.messageReceived(record.getEvent(), System.currentTimeMillis());
                    }
                } catch (ReinitializationRequiredException e) {
-                   reader = ClientFactory.withScope("benchmark", config)
+                   reader = ClientFactory.withScope(scopeName, config)
                                          .createReader(UUID.randomUUID().toString(), subscriptionName,
                                                  new ByteArraySerializer(), ReaderConfig.builder().build());
                }

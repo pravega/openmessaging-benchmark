@@ -37,8 +37,8 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         this.producer = pravegaProducer;
     }
 
-    public PravegaBenchmarkProducer(String streamName, ClientConfig config) {
-        this(ClientFactory.withScope("benchmark", config)
+    public PravegaBenchmarkProducer(String streamName, ClientConfig config, String scopeName) {
+        this(ClientFactory.withScope(scopeName, config)
         .createEventWriter(streamName, new ByteArraySerializer(), EventWriterConfig.builder().build()));
 
     }
