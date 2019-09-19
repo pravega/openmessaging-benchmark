@@ -37,13 +37,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class PravegaBenchmarkCounsumer implements BenchmarkConsumer {
+public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
 
     private final ExecutorService executor;
     private EventStreamReader reader;
     private boolean closed = false;
 
-    public PravegaBenchmarkCounsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback, ClientConfig config) {
+    public PravegaBenchmarkConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback, ClientConfig config) {
         ReaderGroupManager.withScope("benchmark", config)
                           .createReaderGroup(subscriptionName, ReaderGroupConfig.builder()
                                                                                 .stream(Stream.of("benchmark/" + topic))

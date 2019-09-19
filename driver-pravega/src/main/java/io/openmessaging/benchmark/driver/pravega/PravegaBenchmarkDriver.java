@@ -71,7 +71,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback) {
-        BenchmarkConsumer consumer = new PravegaBenchmarkCounsumer(topic, subscriptionName, consumerCallback, config);
+        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, subscriptionName, consumerCallback, config);
         return CompletableFuture.completedFuture(consumer);
     }
 
