@@ -38,6 +38,7 @@ spec:
         app: {{ .Release.Name }}
         component: worker
     spec:
+      serviceAccount: {{ .Release.Namespace }}-pravega
       containers:
         - name: {{ .Release.Name }}-worker
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -49,8 +50,12 @@ spec:
           ports:
             - containerPort: 8080
             - containerPort: 8081
+          env:
+            - name: pravega_client_auth_method
+              value: Bearer
+            - name: pravega_client_auth_loadDynamic
+              value: "true"
 ---
-
 apiVersion: v1
 kind: Service
 metadata:

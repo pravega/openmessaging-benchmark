@@ -75,36 +75,36 @@
 					<optimize>true</optimize>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>3.0</version>
-				<configuration>
-					<header>dev/license-header.txt</header>
+			<!--<plugin>-->
+				<!--<groupId>com.mycila</groupId>-->
+				<!--<artifactId>license-maven-plugin</artifactId>-->
+				<!--<version>3.0</version>-->
+				<!--<configuration>-->
+					<!--<header>dev/license-header.txt</header>-->
 
-					<excludes>
-						<exclude>LICENSE</exclude>
-						<exclude>NOTICE</exclude>
-						<exclude>payload/**</exclude>
-						<exclude>**/*.pyc</exclude>
-						<exclude>**/.pydevproject</exclude>
-					</excludes>
-					<mapping>
-						<benchmark>SCRIPT_STYLE</benchmark>
-						<j2>SCRIPT_STYLE</j2>
-						<conf>SCRIPT_STYLE</conf>
-						<yaml>SCRIPT_STYLE</yaml>
-						<md>XML_STYLE</md>
-					</mapping>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+					<!--<excludes>-->
+						<!--<exclude>LICENSE</exclude>-->
+						<!--<exclude>NOTICE</exclude>-->
+						<!--<exclude>payload/**</exclude>-->
+						<!--<exclude>**/*.pyc</exclude>-->
+						<!--<exclude>**/.pydevproject</exclude>-->
+					<!--</excludes>-->
+					<!--<mapping>-->
+						<!--<benchmark>SCRIPT_STYLE</benchmark>-->
+						<!--<j2>SCRIPT_STYLE</j2>-->
+						<!--<conf>SCRIPT_STYLE</conf>-->
+						<!--<yaml>SCRIPT_STYLE</yaml>-->
+						<!--<md>XML_STYLE</md>-->
+					<!--</mapping>-->
+				<!--</configuration>-->
+				<!--<executions>-->
+					<!--<execution>-->
+						<!--<goals>-->
+							<!--<goal>check</goal>-->
+						<!--</goals>-->
+					<!--</execution>-->
+				<!--</executions>-->
+			<!--</plugin>-->
 		</plugins>
 	</build>
 

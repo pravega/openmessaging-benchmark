@@ -19,6 +19,12 @@
 
 FROM openjdk:8-jdk
 
+RUN apt-get update \
+    && apt-get install -y \
+        less \
+        nano \
+    && rm -rf /var/lib/apt/lists/*
+
 ARG BENCHMARK_TARBALL
 
 ADD ${BENCHMARK_TARBALL} /

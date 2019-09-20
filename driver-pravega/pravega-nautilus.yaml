@@ -18,10 +18,9 @@
 #
 
 
-broker.id={{ brokerId }}
+name: Pravega
+driverClass: io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver
 
-advertised.listeners=PLAINTEXT://{{ privateIp }}:9092
+# Pravega client-specific configuration
 
-log.dirs=/mnt/data
-
-zookeeper.connect={{ zookeeperServers }}
+controllerURI: tcp://nautilus-pravega-controller.nautilus-pravega.svc.cluster.local:9090

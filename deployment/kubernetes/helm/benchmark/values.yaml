@@ -17,8 +17,9 @@
 # under the License.
 #
 
-numWorkers: 8
-image: openmessaging/openmessaging-benchmark:latest
+# Half of workers will be producers, half will be consumers.
+numWorkers: 6
+image: claudiofahey/openmessaging-benchmark:latest
 imagePullPolicy: Always
-workload: workloads/1-topic-16-partitions-1kb.yaml
-driver: driver-pulsar/pulsar.yaml
+workload: /workloads/workload.yaml
+driver: driver-pravega/pravega-nautilus.yaml
