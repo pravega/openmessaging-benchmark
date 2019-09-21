@@ -26,28 +26,35 @@ import io.openmessaging.benchmark.driver.BenchmarkDriver;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.pravega.client.ClientConfig;
+import io.pravega.client.EventStreamClientFactory;
+import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.StreamConfiguration;
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
 import org.apache.bookkeeper.stats.StatsLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+
 public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
 
-    private ClientConfig config;
+    private ClientConfig clientConfig;
     private String scopeName;
-    private StreamManager manager;
+    private StreamManager streamManager;
+    private ReaderGroupManager readerGroupManager;
+    private EventStreamClientFactory clientFactory;
 
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
-        config = readConfig(configurationFile);
-        scopeName = "examples";
-        manager = StreamManager.create(config);
+        clientConfig = readConfig(configurationFile);
+        scopeName = "examples"; // TODO: read from config file
+        streamManager = StreamManager.create(clientConfig);
+        readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
+        clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
     }
 
     private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
@@ -77,8 +84,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     public CompletableFuture<Void> createTopic(String topic, int partitions) {
         topic = cleanName(topic);
         log.info("createTopic: topic={}, partitions={}", topic, partitions);
-//        manager.createScope(scopeName);
-        manager.createStream(scopeName, topic,
+        streamManager.createStream(scopeName, topic,
                 StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(partitions)).build());
         return CompletableFuture.completedFuture(null);
     }
@@ -86,7 +92,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
         topic = cleanName(topic);
-        BenchmarkProducer producer = new PravegaBenchmarkProducer(topic, config, scopeName);
+        BenchmarkProducer producer = new PravegaBenchmarkProducer(topic, clientFactory);
         return CompletableFuture.completedFuture(producer);
     }
 
@@ -94,12 +100,14 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback) {
         topic = cleanName(topic);
         subscriptionName = cleanName(subscriptionName);
-        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, subscriptionName, consumerCallback, config, scopeName);
+        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback, clientFactory, readerGroupManager);
         return CompletableFuture.completedFuture(consumer);
     }
 
     @Override
     public void close() throws Exception {
-        manager.close();
+        clientFactory.close();
+        readerGroupManager.close();
+        streamManager.close();
     }
 }

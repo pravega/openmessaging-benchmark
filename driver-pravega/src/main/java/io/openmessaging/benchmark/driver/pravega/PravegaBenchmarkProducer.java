@@ -19,7 +19,6 @@
 package io.openmessaging.benchmark.driver.pravega;
 
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
-import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
 import io.pravega.client.stream.EventWriterConfig;
@@ -33,11 +32,9 @@ import java.util.concurrent.CompletableFuture;
 public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
 
-    private final EventStreamClientFactory clientFactory;
     private final EventStreamWriter<byte[]> writer;
 
-    public PravegaBenchmarkProducer(String streamName, ClientConfig config, String scopeName) {
-        clientFactory = EventStreamClientFactory.withScope(scopeName, config);
+    public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory) {
         writer = clientFactory.createEventWriter(
                 streamName,
                 new ByteArraySerializer(),
@@ -56,6 +53,5 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     @Override
     public void close() throws Exception {
         writer.close();
-        clientFactory.close();
     }
 }

@@ -20,7 +20,6 @@ package io.openmessaging.benchmark.driver.pravega;
 
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
-import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.stream.*;
@@ -38,23 +37,23 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
 
     private final ExecutorService executor;
     private final EventStreamReader<byte[]> reader;
-    private final EventStreamClientFactory clientFactory;
     private volatile boolean closed = false;    // TODO: use atomic boolean?
 
-    public PravegaBenchmarkConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback, ClientConfig config, String scopeName) {
+    public PravegaBenchmarkConsumer(String topic, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
+                                    EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager) {
         log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, topic={}", subscriptionName, topic);
+        // Create reader group if it doesn't already exist.
         final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
                 .stream(Stream.of(scopeName, topic))
                 .build();
-        try (ReaderGroupManager readerGroupManager = ReaderGroupManager.withScope(scopeName, config)) {
-            readerGroupManager.createReaderGroup(subscriptionName, readerGroupConfig);
-        }
-        clientFactory = EventStreamClientFactory.withScope(scopeName, config);
+        readerGroupManager.createReaderGroup(subscriptionName, readerGroupConfig);
+        // Create reader.
         reader = clientFactory.createReader(
                 UUID.randomUUID().toString(),
                 subscriptionName,
                 new ByteArraySerializer(),
                 ReaderConfig.builder().build());
+        // Start a thread to read events.
         this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
            while (!closed) {
@@ -78,6 +77,5 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         this.executor.shutdown();
         this.executor.awaitTermination(1, TimeUnit.MINUTES);
         reader.close();
-        clientFactory.close();
     }
 }
