@@ -17,6 +17,7 @@ core/*.json
 **/*.lock.info
 .DS_Store
 logs/
+.ipynb_checkpoints/
 
 # IntelliJ artifacts
 .idea/

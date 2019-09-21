@@ -74,14 +74,14 @@ def run_single_benchmark(driver, workload, dry_run=False):
 def main():
     producerWorkers = 3
     for testDurationMinutes in [5]:
-        for producerRate in [10, 100, 1000, 10000]:
+        for producerRate in [20000, 40000, 50000]: # 10, 100, 1000, 10000
             for topics in [1]:
                 for partitionsPerTopic in [1, 6, 16]:
-                    for producersPerTopic in [producerWorkers]:
+                    for producersPerTopic in [producerWorkers, producerWorkers*2]:
                         for consumerBacklogSizeGB in [0]:
                             for subscriptionsPerTopic in [0]:
                                 for consumerPerSubscription in [1]:
-                                    for messageSize in [100, 10000]:
+                                    for messageSize in [100]: #10000
                                         driver = {
                                             'name': 'Pravega',
                                             'driverClass': 'io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver',
