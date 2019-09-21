@@ -33,7 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
-    private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
+    private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkConsumer.class);
 
     private final ExecutorService executor;
     private final EventStreamReader<byte[]> reader;

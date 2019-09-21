@@ -51,6 +51,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
         clientConfig = readConfig(configurationFile);
+        log.info("initialize: clientConfig={}", clientConfig);
         scopeName = "examples"; // TODO: read from config file
         streamManager = StreamManager.create(clientConfig);
         readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
@@ -106,6 +107,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public void close() throws Exception {
+        log.info("close: clientConfig={}", clientConfig);
         clientFactory.close();
         readerGroupManager.close();
         streamManager.close();

@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class PravegaBenchmarkProducer implements BenchmarkProducer {
-    private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
+    private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkProducer.class);
 
     private final EventStreamWriter<byte[]> writer;
 
