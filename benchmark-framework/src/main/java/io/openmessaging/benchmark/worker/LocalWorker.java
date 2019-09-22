@@ -78,6 +78,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private final RateLimiter rateLimiter = RateLimiter.create(1.0);
 
     private final ExecutorService executor = Executors.newCachedThreadPool(new DefaultThreadFactory("local-worker"));
+//    private final ExecutorService executor = new ForkJoinPool();
 
     // stats
 
@@ -211,6 +212,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private void submitProducersToExecutor(Map<BenchmarkProducer, KeyDistributor> producersWithKeyDistributor,
             byte[] payloadData) {
         executor.submit(() -> {
+            log.info("submitProducersToExecutor: # producers={}", producersWithKeyDistributor.size());
             try {
                 while (!testCompleted) {
                     producersWithKeyDistributor.forEach((producer, producersKeyDistributor) -> {

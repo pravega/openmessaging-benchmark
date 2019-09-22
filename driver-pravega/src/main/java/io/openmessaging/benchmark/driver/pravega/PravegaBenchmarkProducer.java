@@ -35,6 +35,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private final EventStreamWriter<byte[]> writer;
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory) {
+        log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
         writer = clientFactory.createEventWriter(
                 streamName,
                 new ByteArraySerializer(),
@@ -43,6 +44,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
+//        return CompletableFuture.completedFuture(null);
         if (key.isPresent()) {
             return writer.writeEvent(key.get(), payload);
         } else {
