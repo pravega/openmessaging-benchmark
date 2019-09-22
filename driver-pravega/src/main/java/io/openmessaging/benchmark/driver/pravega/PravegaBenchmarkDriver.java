@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class PravegaBenchmarkDriver implements BenchmarkDriver {
@@ -47,6 +49,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private StreamManager streamManager;
     private ReaderGroupManager readerGroupManager;
     private EventStreamClientFactory clientFactory;
+    private final List<String> createdTopics = new ArrayList<>();
 
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
@@ -85,6 +88,9 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     public CompletableFuture<Void> createTopic(String topic, int partitions) {
         topic = cleanName(topic);
         log.info("createTopic: topic={}, partitions={}", topic, partitions);
+        synchronized (createdTopics) {
+            createdTopics.add(topic);
+        }
         streamManager.createStream(scopeName, topic,
                 StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(partitions)).build());
         return CompletableFuture.completedFuture(null);
@@ -105,11 +111,28 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         return CompletableFuture.completedFuture(consumer);
     }
 
+    private void deleteTopics() {
+        synchronized (createdTopics) {
+            for (String topic: createdTopics) {
+                log.info("deleteTopics: topic={}", topic);
+                streamManager.sealStream(scopeName, topic);
+                streamManager.deleteStream(scopeName, topic);
+            }
+        }
+    }
+
     @Override
     public void close() throws Exception {
         log.info("close: clientConfig={}", clientConfig);
-        clientFactory.close();
-        readerGroupManager.close();
-        streamManager.close();
+        if (clientFactory != null) {
+            clientFactory.close();
+        }
+        if (readerGroupManager != null) {
+            readerGroupManager.close();
+        }
+        if (streamManager != null) {
+            deleteTopics();
+            streamManager.close();
+        }
     }
 }
