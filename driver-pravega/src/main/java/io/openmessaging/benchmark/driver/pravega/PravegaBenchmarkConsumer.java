@@ -39,12 +39,12 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
     private final EventStreamReader<byte[]> reader;
     private volatile boolean closed = false;    // TODO: use atomic boolean?
 
-    public PravegaBenchmarkConsumer(String topic, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
+    public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
                                     EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager) {
-        log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, topic={}", subscriptionName, topic);
+        log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, streamName={}", subscriptionName, streamName);
         // Create reader group if it doesn't already exist.
         final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
-                .stream(Stream.of(scopeName, topic))
+                .stream(Stream.of(scopeName, streamName))
                 .build();
         readerGroupManager.createReaderGroup(subscriptionName, readerGroupConfig);
         // Create reader.
