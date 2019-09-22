@@ -25,6 +25,7 @@ metadata:
     app: {{ .Release.Name }}
     role: driver
 spec:
+  serviceAccount: {{ .Release.Namespace }}-pravega
   containers:
     - name: {{ .Release.Name }}-driver
       imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -43,28 +44,3 @@ spec:
         - >
           echo "bin/benchmark --drivers {{ .Values.driver }} --workers $WORKERS {{ .Values.workload }}" > example-run.sh &&
           sleep infinity
-#      volumeMounts:
-#        - name: workloads-volume
-#          mountPath: /workloads
-#  volumes:
-#    - name: workloads-volume
-#      configMap:
-#        name: {{ .Release.Name }}-workloads
-#---
-#apiVersion: v1
-#kind: ConfigMap
-#metadata:
-#  name: {{ .Release.Name }}-workloads
-#data:
-#  workload.yaml: |
-#    name: 1-topic-10-partitions-3-producers-0-consumers-1000B
-#    topics: 1
-#    partitionsPerTopic: 10
-#    messageSize: 1000
-#    payloadFile: "/tmp/payload.data"
-#    subscriptionsPerTopic: 0
-#    consumerPerSubscription: 1
-#    producersPerTopic: 3
-#    producerRate: 100000    # units are events/sec
-#    consumerBacklogSizeGB: 0
-#    testDurationMinutes: 1
