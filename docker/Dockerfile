@@ -17,6 +17,18 @@
 # under the License.
 #
 
+# Building Container
+
+FROM openjdk:8-jdk as Builder
+
+ARG BENCHMARK_TARBALL
+
+ADD ${BENCHMARK_TARBALL} /
+
+RUN mv openmessaging-benchmark-* /benchmark
+
+# Runtime Container
+
 FROM openjdk:8-jdk
 
 RUN apt-get update \
@@ -25,10 +37,6 @@ RUN apt-get update \
         nano \
     && rm -rf /var/lib/apt/lists/*
 
-ARG BENCHMARK_TARBALL
-
-ADD ${BENCHMARK_TARBALL} /
-
-RUN mv openmessaging-benchmark-* /benchmark
+COPY --from=Builder /benchmark /benchmark
 
 WORKDIR /benchmark
