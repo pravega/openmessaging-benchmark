@@ -190,13 +190,15 @@ public class LocalWorker implements Worker, ConsumerCallback {
     @Override
     public void startLoad(ProducerWorkAssignment producerWorkAssignment) {
         int processors = Runtime.getRuntime().availableProcessors();
+        int producersPerProcessor = (producers.size() + processors - 1) / processors;
+        log.info("producers={}, availableProcessors={}, producersPerProcessor={}", producers.size(), processors, producersPerProcessor);
 
         final Function<BenchmarkProducer, KeyDistributor> assignKeyDistributor = (any) -> KeyDistributor
                 .build(producerWorkAssignment.keyDistributorType);
 
         rateLimiter.setRate(producerWorkAssignment.publishRate);
 
-        Lists.partition(producers, processors).stream()
+        Lists.partition(producers, producersPerProcessor).stream()
                 .map(producersPerThread -> producersPerThread.stream()
                         .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
                 .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor,
