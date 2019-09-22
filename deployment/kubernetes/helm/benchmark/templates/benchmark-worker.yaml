@@ -39,12 +39,44 @@ spec:
         component: worker
     spec:
       serviceAccount: {{ .Release.Namespace }}-pravega
-      nodeSelector:
-        kubernetes.io/hostname: 10.0.8.6
+#      nodeSelector:
+#        kubernetes.io/hostname: 10.0.8.9
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            # Do not place on same node as Pravega pods.
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - pravega-cluster
+              topologyKey: kubernetes.io/hostname
+              namespaces:
+                - nautilus-pravega
+            # Do not place on same node as other workers.
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - {{ .Release.Name }}
+                  - key: component
+                    operator: In
+                    values:
+                      - worker
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: {{ .Release.Name }}-worker
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           image: {{ .Values.image }}
+#          resources:
+#            limits:
+#              cpu: "12"
+#              memory: "4Gi"
+#            requests:
+#              cpu: "1"
+#              memory: "4Gi"
           command: ["sh", "-c"]
           args:
             - >
