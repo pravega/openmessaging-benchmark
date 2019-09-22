@@ -39,6 +39,8 @@ spec:
         component: worker
     spec:
       serviceAccount: {{ .Release.Namespace }}-pravega
+      nodeSelector:
+        kubernetes.io/hostname: 10.0.8.6
       containers:
         - name: {{ .Release.Name }}-worker
           imagePullPolicy: {{ .Values.imagePullPolicy }}

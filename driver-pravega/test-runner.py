@@ -55,21 +55,22 @@ def main():
                                             run_single_benchmark(driver, workload, dry_run=False, localWorker=localWorker, namespace=namespace)
 
 
-def deploy(numWorkers, image, namespace, tarball):
+def deploy(numWorkers, image, namespace, tarball, build=False):
     cmd = ['helm', 'delete', '--purge', '%s-openmessaging-benchmarking' % namespace]
     subprocess.run(cmd, check=False)
-    cmd = ['mvn', 'install']
-    subprocess.run(cmd, check=True, cwd='..')
-    cmd = [
-        'docker', 'build',
-        '--build-arg', 'BENCHMARK_TARBALL=%s' % tarball,
-        '-f', '../docker/Dockerfile',
-        '-t', image,
-        '..',
-    ]
-    subprocess.run(cmd, check=True)
-    cmd = ['docker', 'push', image]
-    subprocess.run(cmd, check=True)
+    if build:
+        cmd = ['mvn', 'install']
+        subprocess.run(cmd, check=True, cwd='..')
+        cmd = [
+            'docker', 'build',
+            '--build-arg', 'BENCHMARK_TARBALL=%s' % tarball,
+            '-f', '../docker/Dockerfile',
+            '-t', image,
+            '..',
+        ]
+        subprocess.run(cmd, check=True)
+        cmd = ['docker', 'push', image]
+        subprocess.run(cmd, check=True)
     cmd = [
         'kubectl', 'wait', '--for=delete', '--timeout=300s',
         '-n', namespace,

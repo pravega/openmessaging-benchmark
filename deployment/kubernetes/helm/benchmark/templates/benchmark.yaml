@@ -26,6 +26,8 @@ metadata:
     role: driver
 spec:
   serviceAccount: {{ .Release.Namespace }}-pravega
+  nodeSelector:
+    kubernetes.io/hostname: 10.0.8.7
   containers:
     - name: {{ .Release.Name }}-driver
       imagePullPolicy: {{ .Values.imagePullPolicy }}
