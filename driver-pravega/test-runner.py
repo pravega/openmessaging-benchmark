@@ -20,14 +20,14 @@ def main():
     image = '%s/openmessaging-benchmark:%s' % (dockerRepository, imageTag)
     tarball = 'package/target/openmessaging-benchmark-0.0.1-SNAPSHOT-bin.tar.gz'
     for repeat in range(3):
-        for producerWorkers in [3,2,1]:
+        for producerWorkers in [1]:
             numWorkers = 0 if localWorker else producerWorkers*1
             deploy(numWorkers=numWorkers, image=image, namespace=namespace, tarball=tarball)
             for testDurationMinutes in [5]:
                 for producerRate in [1e9]: # 10, 100, 1000, 10000
                     for topics in [1]:
                         for partitionsPerTopic in [96]:
-                            for producersPerTopic in [producerWorkers*16,producerWorkers*4,producerWorkers*1,producerWorkers*32]:
+                            for producersPerTopic in [producerWorkers*16]:
                                 for consumerBacklogSizeGB in [0]:
                                     for subscriptionsPerTopic in [0]:
                                         for consumerPerSubscription in [1]:
@@ -50,7 +50,13 @@ def main():
                                                     'keyDistributor': 'NO_KEY',
 
                                                 }
-                                                run_single_benchmark(driver, workload, dry_run=False, localWorker=localWorker, namespace=namespace)
+                                                run_single_benchmark(
+                                                    driver,
+                                                    workload,
+                                                    dry_run=False,
+                                                    numWorkers=numWorkers,
+                                                    localWorker=localWorker,
+                                                    namespace=namespace)
 
 
 def deploy(numWorkers, image, namespace, tarball, build=True):
@@ -92,13 +98,16 @@ def deploy(numWorkers, image, namespace, tarball, build=True):
     subprocess.run(cmd, check=True)
 
 
-def run_single_benchmark(driver, workload, namespace, dry_run=False, localWorker=False):
+def run_single_benchmark(driver, workload, namespace, dry_run=False, numWorkers=1, localWorker=False):
+    git_commit = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, check=True).stdout.decode()
     test_uuid = str(uuid.uuid4())
     params = {
         'test_uuid': test_uuid,
         'utc_begin': datetime.datetime.utcnow().isoformat(),
         'driver': driver,
         'workload': workload,
+        'numWorkers': numWorkers,
+        'git_commit': git_commit,
     }
     # Encode all parameters in workload name attribute so they get written to the results file.
     workload['name'] = json.dumps(params)
