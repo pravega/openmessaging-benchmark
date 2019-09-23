@@ -79,7 +79,10 @@ public class WorkloadGenerator implements AutoCloseable {
 
         ensureTopicsAreReady();
 
-        if (workload.producerRate > 0) {
+        if (workload.producerRate == -1 || workload.producerRate >= Integer.MAX_VALUE) {
+            // This will disable the rate limiter.
+            targetPublishRate = Double.POSITIVE_INFINITY;
+        } else if (workload.producerRate > 0) {
             targetPublishRate = workload.producerRate;
         } else {
             // Producer rate is 0 and we need to discover the sustainable rate

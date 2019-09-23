@@ -198,7 +198,11 @@ public class LocalWorker implements Worker, ConsumerCallback {
         final Function<BenchmarkProducer, KeyDistributor> assignKeyDistributor = (any) -> KeyDistributor
                 .build(producerWorkAssignment.keyDistributorType);
 
-        rateLimiter.setRate(producerWorkAssignment.publishRate);
+        rateLimiterEnabled = producerWorkAssignment.publishRate != Double.POSITIVE_INFINITY;
+        if (rateLimiterEnabled) {
+            rateLimiter.setRate(producerWorkAssignment.publishRate);
+        }
+        log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
 
         Lists.partition(producers, producersPerProcessor).stream()
                 .map(producersPerThread -> producersPerThread.stream()
