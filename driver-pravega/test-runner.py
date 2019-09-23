@@ -24,7 +24,7 @@ def main():
             numWorkers = 0 if localWorker else producerWorkers*1
             deploy(numWorkers=numWorkers, image=image, namespace=namespace, tarball=tarball)
             for testDurationMinutes in [5]:
-                for producerRate in [1e9]: # 10, 100, 1000, 10000
+                for producerRate in [-1]: # 10, 100, 1000, 10000
                     for topics in [1]:
                         for partitionsPerTopic in [96]:
                             for producersPerTopic in [producerWorkers*16]:
