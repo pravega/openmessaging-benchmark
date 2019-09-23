@@ -39,8 +39,6 @@ spec:
         component: worker
     spec:
       serviceAccount: {{ .Release.Namespace }}-pravega
-#      nodeSelector:
-#        kubernetes.io/hostname: 10.0.8.9
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -70,13 +68,12 @@ spec:
         - name: {{ .Release.Name }}-worker
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           image: {{ .Values.image }}
-#          resources:
-#            limits:
-#              cpu: "12"
-#              memory: "4Gi"
-#            requests:
-#              cpu: "1"
-#              memory: "4Gi"
+          resources:
+            limits:
+              memory: "6Gi"
+            requests:
+              cpu: "1"
+              memory: "6Gi"
           command: ["sh", "-c"]
           args:
             - >
