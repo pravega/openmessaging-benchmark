@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -76,9 +76,11 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private List<BenchmarkConsumer> consumers = new ArrayList<>();
 
     private final RateLimiter rateLimiter = RateLimiter.create(1.0);
+    private boolean rateLimiterEnabled = false;
 
-    private final ExecutorService executor = Executors.newCachedThreadPool(new DefaultThreadFactory("local-worker"));
-//    private final ExecutorService executor = new ForkJoinPool();
+//    private final ExecutorService executor = Executors.newCachedThreadPool(new DefaultThreadFactory("local-worker"));
+//    private final ExecutorService executor = Executors.newFixedThreadPool(16);
+    private final ExecutorService executor = new ForkJoinPool();
 
     // stats
 
@@ -218,7 +220,9 @@ public class LocalWorker implements Worker, ConsumerCallback {
             try {
                 while (!testCompleted) {
                     producersWithKeyDistributor.forEach((producer, producersKeyDistributor) -> {
-                        rateLimiter.acquire();
+                        if (rateLimiterEnabled) {
+                            rateLimiter.acquire();
+                        }
                         final long sendTime = System.nanoTime();
                         producer.sendAsync(Optional.ofNullable(producersKeyDistributor.next()), payloadData)
                                 .thenRun(() -> {
