@@ -20,6 +20,7 @@ package io.openmessaging.benchmark.worker;
 
 import static java.util.stream.Collectors.toList;
 
+import com.google.common.primitives.Longs;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 import java.io.File;
 import java.io.IOException;
@@ -99,12 +100,14 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private final LongAdder totalMessagesSent = new LongAdder();
     private final LongAdder totalMessagesReceived = new LongAdder();
 
-    private final Recorder publishLatencyRecorder = new Recorder(TimeUnit.SECONDS.toMicros(60), 5);
-    private final Recorder cumulativePublishLatencyRecorder = new Recorder(TimeUnit.SECONDS.toMicros(60), 5);
+    private final long publishLatencyMax = TimeUnit.SECONDS.toMicros(60);
+    private final Recorder publishLatencyRecorder = new Recorder(publishLatencyMax, 5);
+    private final Recorder cumulativePublishLatencyRecorder = new Recorder(publishLatencyMax, 5);
     private final OpStatsLogger publishLatencyStats;
 
-    private final Recorder endToEndLatencyRecorder = new Recorder(TimeUnit.HOURS.toMicros(12), 5);
-    private final Recorder endToEndCumulativeLatencyRecorder = new Recorder(TimeUnit.HOURS.toMicros(12), 5);
+    private final long endToEndLatencyMax = TimeUnit.HOURS.toMicros(12);
+    private final Recorder endToEndLatencyRecorder = new Recorder(endToEndLatencyMax, 5);
+    private final Recorder endToEndCumulativeLatencyRecorder = new Recorder(endToEndLatencyMax, 5);
     private final OpStatsLogger endToEndLatencyStats;
 
     private boolean testCompleted = false;
@@ -236,7 +239,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
                             bytesSent.add(payloadData.length);
                             bytesSentCounter.add(payloadData.length);
 
-                            long latencyMicros = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - sendTime);
+                            long latencyMicros = Longs.constrainToRange(TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - sendTime), 0, publishLatencyMax);
                             publishLatencyRecorder.recordValue(latencyMicros);
                             cumulativePublishLatencyRecorder.recordValue(latencyMicros);
                             publishLatencyStats.registerSuccessfulEvent(latencyMicros, TimeUnit.MICROSECONDS);
@@ -304,7 +307,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
         bytesReceivedCounter.add(data.length);
 
         long now = System.currentTimeMillis();
-        long endToEndLatencyMicros = TimeUnit.MILLISECONDS.toMicros(now - publishTimestamp);
+        long endToEndLatencyMicros = Longs.constrainToRange(TimeUnit.MILLISECONDS.toMicros(now - publishTimestamp), 0, endToEndLatencyMax);
         if (endToEndLatencyMicros > 0) {
             endToEndCumulativeLatencyRecorder.recordValue(endToEndLatencyMicros);
             endToEndLatencyRecorder.recordValue(endToEndLatencyMicros);
