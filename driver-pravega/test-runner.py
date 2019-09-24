@@ -19,23 +19,32 @@ def main():
     imageTag = 'dev'
     image = '%s/openmessaging-benchmark:%s' % (dockerRepository, imageTag)
     tarball = 'package/target/openmessaging-benchmark-0.0.1-SNAPSHOT-bin.tar.gz'
+
+    undeploy(namespace=namespace, wait=False)
+    build(image=image, tarball=tarball)
+
     for repeat in range(3):
-        for producerWorkers in [1]:
+        for producerWorkers in [3]:
             numWorkers = 0 if localWorker else producerWorkers*1
-            deploy(numWorkers=numWorkers, image=image, namespace=namespace, tarball=tarball)
+            deploy(numWorkers=numWorkers, image=image, namespace=namespace)
             for testDurationMinutes in [5]:
-                for producerRate in [-1]: # 10, 100, 1000, 10000
-                    for topics in [1]:
-                        for partitionsPerTopic in [96]:
-                            for producersPerTopic in [producerWorkers*16]:
-                                for consumerBacklogSizeGB in [0]:
-                                    for subscriptionsPerTopic in [0]:
-                                        for consumerPerSubscription in [1]:
-                                            for messageSize in [100]: #10000
+                for messageSize in [512*1024,10000]:
+                    # for producerRateEventsPerSec in [-1]: # 10, 100, 1000, 10000
+                    for producerRateMBps in [90.0]:
+                        producerRateEventsPerSec = (producerRateMBps * 1000 * 1000) / messageSize
+                        for topics in [1]:
+                            for partitionsPerTopic in [96]:
+                                for producersPerTopic in [producerWorkers*1,producerWorkers*16,producerWorkers*4]:
+                                    for consumerBacklogSizeGB in [0]:
+                                        for subscriptionsPerTopic in [0]:
+                                            for consumerPerSubscription in [1]:
                                                 driver = {
                                                     'name': 'Pravega',
                                                     'driverClass': 'io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver',
-                                                    'controllerURI': 'tcp://nautilus-pravega-controller.nautilus-pravega.svc.cluster.local:9090',
+                                                    'client': {
+                                                        'controllerURI': 'tcp://nautilus-pravega-controller.nautilus-pravega.svc.cluster.local:9090',
+                                                        'scopeName': 'examples',
+                                                    },
                                                 }
                                                 workload = {
                                                     'topics':  topics,
@@ -44,7 +53,7 @@ def main():
                                                     'subscriptionsPerTopic': subscriptionsPerTopic,
                                                     'consumerPerSubscription': consumerPerSubscription,
                                                     'producersPerTopic': producersPerTopic,
-                                                    'producerRate': producerRate,
+                                                    'producerRate': producerRateEventsPerSec,
                                                     'consumerBacklogSizeGB': consumerBacklogSizeGB,
                                                     'testDurationMinutes': testDurationMinutes,
                                                     'keyDistributor': 'NO_KEY',
@@ -59,34 +68,41 @@ def main():
                                                     namespace=namespace)
 
 
-def deploy(numWorkers, image, namespace, tarball, build=True):
+def build(image, tarball):
+    cmd = ['mvn', 'install']
+    subprocess.run(cmd, check=True, cwd='..')
+    cmd = [
+        'docker', 'build',
+        '--build-arg', 'BENCHMARK_TARBALL=%s' % tarball,
+        '-f', '../docker/Dockerfile',
+        '-t', image,
+        '..',
+    ]
+    subprocess.run(cmd, check=True)
+    cmd = ['docker', 'push', image]
+    subprocess.run(cmd, check=True)
+
+
+def undeploy(namespace, wait=True):
     cmd = ['helm', 'delete', '--purge', '%s-openmessaging-benchmarking' % namespace]
     subprocess.run(cmd, check=False)
-    if build:
-        cmd = ['mvn', 'install']
-        subprocess.run(cmd, check=True, cwd='..')
+    if wait:
         cmd = [
-            'docker', 'build',
-            '--build-arg', 'BENCHMARK_TARBALL=%s' % tarball,
-            '-f', '../docker/Dockerfile',
-            '-t', image,
-            '..',
-        ]
-        subprocess.run(cmd, check=True)
-        cmd = ['docker', 'push', image]
-        subprocess.run(cmd, check=True)
-    cmd = [
-        'kubectl', 'wait', '--for=delete', '--timeout=300s',
-        '-n', namespace,
-        'statefulset/%s-openmessaging-benchmarking-worker' % namespace,
-        ]
-    subprocess.run(cmd, check=False)
-    cmd = [
-        'kubectl', 'wait', '--for=delete', '--timeout=300s',
-        '-n', namespace,
-        'pod/%s-openmessaging-benchmarking-driver' % namespace,
-        ]
-    subprocess.run(cmd, check=False)
+            'kubectl', 'wait', '--for=delete', '--timeout=300s',
+            '-n', namespace,
+            'statefulset/%s-openmessaging-benchmarking-worker' % namespace,
+            ]
+        subprocess.run(cmd, check=False)
+        cmd = [
+            'kubectl', 'wait', '--for=delete', '--timeout=300s',
+            '-n', namespace,
+            'pod/%s-openmessaging-benchmarking-driver' % namespace,
+            ]
+        subprocess.run(cmd, check=False)
+
+
+def deploy(numWorkers, image, namespace):
+    undeploy(namespace, wait=True)
     cmd = [
         'helm', 'upgrade', '--install', '--timeout', '600', '--wait', '--debug',
         '%s-openmessaging-benchmarking' % namespace,

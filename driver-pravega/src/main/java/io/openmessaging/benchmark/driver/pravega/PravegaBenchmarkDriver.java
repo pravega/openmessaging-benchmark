@@ -20,11 +20,13 @@ package io.openmessaging.benchmark.driver.pravega;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.BenchmarkDriver;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
+import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
@@ -37,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -44,6 +47,9 @@ import java.util.concurrent.CompletableFuture;
 public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
 
+    private static final ObjectWriter objectWriter = new ObjectMapper().writerWithDefaultPrettyPrinter();
+
+    private PravegaConfig config;
     private ClientConfig clientConfig;
     private String scopeName;
     private StreamManager streamManager;
@@ -53,9 +59,13 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
-        clientConfig = readConfig(configurationFile);
-        log.info("initialize: clientConfig={}", clientConfig);
-        scopeName = "examples"; // TODO: read from config file
+        config = readConfig(configurationFile);
+        log.info("Pravega driver configuration: {}", objectWriter.writeValueAsString(config));
+
+        clientConfig = ClientConfig.builder()
+                .controllerURI(URI.create(config.client.controllerURI))
+                .build();
+        scopeName = config.client.scopeName;
         streamManager = StreamManager.create(clientConfig);
         readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
@@ -64,12 +74,8 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    private static ClientConfig readConfig(File configurationFile) throws IOException {
-        // TODO: Do not read into ClientConfig class.
-        ClientConfig tempConfig = mapper.readValue(configurationFile, ClientConfig.class);
-        return ClientConfig.builder()
-                .controllerURI(tempConfig.getControllerURI())
-                .build();
+    private static PravegaConfig readConfig(File configurationFile) throws IOException {
+        return mapper.readValue(configurationFile, PravegaConfig.class);
     }
 
     /**
