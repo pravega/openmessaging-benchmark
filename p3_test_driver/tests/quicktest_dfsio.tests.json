@@ -1,0 +1,10 @@
+[
+    {
+        "test": "write",
+        "data_size_MB": 1000.0
+    },
+    {
+        "test": "read",
+        "data_size_MB": 1000.0
+    }
+]

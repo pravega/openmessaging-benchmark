@@ -1,0 +1,4 @@
+	{
+		"status_html": "../data/status/status-dummy.html",
+	  	"test_driver_log_filename": "/tmp/dummy_p3_test_driver.log"
+	}

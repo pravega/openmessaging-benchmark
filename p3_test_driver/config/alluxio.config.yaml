@@ -1,0 +1,5 @@
+storage_hadoop_uri: alluxio://hop-claudio-hdp5-master-0.solarch.lab.emc.com:19998/hive-warehouse-1
+alluxio_enabled: true
+#alluxio_user_file_writetype_default: CACHE_THROUGH    # was not effective prior to 10/17/2016
+alluxio_user_file_writetype_default: MUST_CACHE
+alluxio_worker_memory_size_MB: 114688

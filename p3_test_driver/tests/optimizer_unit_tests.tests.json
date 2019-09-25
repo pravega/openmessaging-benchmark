@@ -1,0 +1,21 @@
+[
+    {
+    "optimizer_extra_points_file": "../data/optimizer/dummy-extra.json",
+    "optimizer_grid_search": true,
+    "optimizer_max_moe_iterations": 2000,
+    "optimizer_max_test_attempts": 3,
+    "optimizer_moe_rest_host": "hop-claudio-ubuntu-desktop",
+    "optimizer_sample_size": 3,
+    "optimizer_observations_file": "../data/optimizer/dummy-obs.json",
+    "optimizer_transform_col_rules": [
+        {"name": "x0", "min": 0.0, "max": 2.0, "type": "linear", "multiple_of": 0.1},
+        {"name": "x1", "min": 0.0, "max": 4.0, "type": "linear", "multiple_of": 0.1, "fixed_value": 2.25},
+        {"name": "x2", "min": -1.0, "max": 1.0, "type": "linear", "multiple_of": 0.1, "grid_search": [0.5,0.6]},
+        {"name": "x3", "min": 2.0, "max": "10**3", "type": "log", "base": 2, "exponent_multiple_of": "1/4", "multiple_of": 2.0, "grid_search": [2,512]},
+        {"name": "b0", "type": "boolean"}
+        ],
+    "optimizer_to_minimize": "y",
+    "optimizer_test": "optimizer_unit_test",
+    "test": "optimizer"
+    }
+]

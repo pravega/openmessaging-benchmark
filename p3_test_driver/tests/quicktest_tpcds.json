@@ -1,0 +1,18 @@
+[
+    {
+        "command_timeout_sec": 3600,
+        "db_name": "tpcds_bin_partitioned_orc_%(sf)d",
+        "db_type": "hive",
+        "flush_compute": false,
+        "hive-testbench_commit": "fe01d1114c4f12634a9f7a0f7c9821b662561997",
+        "hive_init_file": "../hive-testbench/sample-queries-tpcds/testbench.settings",
+        "hive_version": "0.14.0.2.2.4.2-2",
+        "isilon_flush": false,
+        "isilon_hdfs_server_threads": 80,
+        "kill_all_yarn_jobs": true,
+        "query_filename": "../hive-testbench/set1-queries-tpcds/query21.sql",
+        "result_filename": "../data/tpcds_results/json_junk/%(cluster_name)s_%(storage_cluster_name)s_%(test)s_%(test_uuid)s.json.bz2",
+        "sf": 30000,
+        "test": "sqlquery"
+    }
+]
