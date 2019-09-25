@@ -3,7 +3,7 @@
 from __future__ import division
 import logging
 import subprocess
-import Queue
+import queue as Queue
 import threading
 
 # P3 Libraries

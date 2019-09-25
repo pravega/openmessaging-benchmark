@@ -1,6 +1,0 @@
-	{
-        "storage_cluster_name": "hop-claudio-cdh1",
-        "storage_hadoop_uri": "",
-        "storage_num_nodes": 3,
-        "storage_type": "das"
-	}

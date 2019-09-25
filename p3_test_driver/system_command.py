@@ -4,7 +4,7 @@ from __future__ import division
 import subprocess
 import sys
 import datetime
-import Queue
+import queue as Queue
 import logging
 import threading
 
@@ -16,6 +16,7 @@ def popen_to_queue(popen, pipe, q, message_type='system_command_output', message
     if message_data is None:
         message_data = {}
     for line in iter(pipe.readline, b''):
+        line = line.decode()
         line = line.rstrip('\n')
         msg = message_data.copy()
         msg.update({'message_type': message_type, 'line': line, 'utc': datetime.datetime.utcnow().isoformat()})
@@ -52,7 +53,7 @@ def system_command(cmd, print_command=True, print_output=False, raise_on_error=T
     
     # Determine if we need to use our custom event handler or p.communicate().
     if timeout or print_output:
-        if not timeout or timeout <= 0: timeout = sys.maxint
+        if not timeout or timeout <= 0: timeout = 2**31
         t0 = datetime.datetime.utcnow()       
         # Create queue for process output
         q = Queue.Queue()

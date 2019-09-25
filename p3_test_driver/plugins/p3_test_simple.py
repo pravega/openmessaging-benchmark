@@ -13,26 +13,14 @@ import p3_storage
 from p3_metrics import MetricsCollector
 from p3_util import record_result
 from system_command import system_command, time_duration_to_seconds
-from hadoop_util import configure_compute
 from p3_test import TimeoutException, StorageTest
 
 _default_configs = {
     'simple': {
         'print_output': True,
         },
-    'simple_hadoop': {
-        "collect_text_files_node_manager": [
-            '/etc/rc.local',
-            '/etc/redhat-release',
-            '/etc/sysctl.conf',
-            '/etc/hadoop/conf/core-site.xml',
-            '/etc/hadoop/conf/hdfs-site.xml',
-            '/etc/hadoop/conf/mapred-site.xml',
-            '/etc/hadoop/conf/yarn-site.xml',
-            ],
-        'print_output': True,
-        }
     }
+
 
 class PluginInfo(p3_plugin_manager.IP3Plugin):
     def get_plugin_info(self):
@@ -42,12 +30,8 @@ class PluginInfo(p3_plugin_manager.IP3Plugin):
             'class_name': 'simple',
             'class': SimpleTest,
             },
-            {
-            'class_type': 'test', 
-            'class_name': 'simple_hadoop',
-            'class': SimpleHadoopTest,
-            },
         ]
+
 
 class SimpleTest(StorageTest):
     """P3 generic test class that can be used to run tests consisting of a single command."""
@@ -121,17 +105,3 @@ class SimpleTest(StorageTest):
             raise TimeoutException()
         if rec['error']:
             raise Exception('Command failed')
-
-class SimpleHadoopTest(SimpleTest):
-    """Identical to SimpleTest except that it configures and records the Hadoop environment."""
-
-    def __init__(self, test_config, default_configs=_default_configs):
-        super(SimpleHadoopTest, self).__init__(test_config, default_configs=default_configs)
-
-    def configure_environment(self):
-        self.configure_storage()
-        self.configure_compute()
-
-    def configure_compute(self):
-        config = self.test_config
-        configure_compute(config)
