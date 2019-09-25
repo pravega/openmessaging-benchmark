@@ -21,4 +21,6 @@ package io.openmessaging.benchmark.driver.pravega.config;
 public class PravegaConfig {
     public PravegaClientConfig client;
     public PravegaWriterConfig writer;
+    // includeTimestampInEvent must be true to measure end-to-end latency.
+    public boolean includeTimestampInEvent = true;
 }

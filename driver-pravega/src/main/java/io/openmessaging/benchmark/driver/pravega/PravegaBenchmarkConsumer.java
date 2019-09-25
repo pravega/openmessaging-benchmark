@@ -22,11 +22,17 @@ import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
-import io.pravega.client.stream.*;
-import io.pravega.client.stream.impl.ByteArraySerializer;
+import io.pravega.client.stream.EventRead;
+import io.pravega.client.stream.EventStreamReader;
+import io.pravega.client.stream.ReaderConfig;
+import io.pravega.client.stream.ReaderGroupConfig;
+import io.pravega.client.stream.ReinitializationRequiredException;
+import io.pravega.client.stream.Stream;
+import io.pravega.client.stream.impl.ByteBufferSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,11 +42,12 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkConsumer.class);
 
     private final ExecutorService executor;
-    private final EventStreamReader<byte[]> reader;
+    private final EventStreamReader<ByteBuffer> reader;
     private volatile boolean closed = false;    // TODO: use atomic boolean?
 
     public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
-                                    EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager) {
+                                    EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager,
+                                    boolean includeTimestampInEvent) {
         log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, streamName={}", subscriptionName, streamName);
         // Create reader group if it doesn't already exist.
         final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
@@ -51,17 +58,26 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         reader = clientFactory.createReader(
                 UUID.randomUUID().toString(),
                 subscriptionName,
-                new ByteArraySerializer(),
+                new ByteBufferSerializer(),
                 ReaderConfig.builder().build());
         // Start a thread to read events.
         this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
            while (!closed) {
                try {
-                   EventRead<byte[]> record = reader.readNextEvent(1000);
-                   if (record.getEvent() != null) {
-                       // TODO: must get publish time from event
-                       consumerCallback.messageReceived(record.getEvent(), System.currentTimeMillis());
+                   final EventRead<ByteBuffer> record = reader.readNextEvent(1000);
+                   final ByteBuffer event = record.getEvent();
+                   if (event != null) {
+                       long eventTimestamp;
+                       if (includeTimestampInEvent) {
+                           eventTimestamp = event.getLong();
+                       } else {
+                           // This will result in an invalid end-to-end latency measurement of 12 hours.
+                           eventTimestamp = 0;
+                       }
+                       byte[] payload = new byte[event.remaining()];
+                       event.get(payload);
+                       consumerCallback.messageReceived(payload, eventTimestamp);
                    }
                } catch (ReinitializationRequiredException e) {
                    log.error("Exception during read", e);

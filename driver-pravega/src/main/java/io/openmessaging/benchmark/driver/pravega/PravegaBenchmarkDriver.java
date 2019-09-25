@@ -105,7 +105,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
         topic = cleanName(topic);
-        BenchmarkProducer producer = new PravegaBenchmarkProducer(topic, clientFactory);
+        BenchmarkProducer producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent);
         return CompletableFuture.completedFuture(producer);
     }
 
@@ -113,7 +113,8 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback) {
         topic = cleanName(topic);
         subscriptionName = cleanName(subscriptionName);
-        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback, clientFactory, readerGroupManager);
+        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback, clientFactory, readerGroupManager,
+                config.includeTimestampInEvent);
         return CompletableFuture.completedFuture(consumer);
     }
 

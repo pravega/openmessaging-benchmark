@@ -22,33 +22,48 @@ import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
 import io.pravega.client.stream.EventWriterConfig;
-import io.pravega.client.stream.impl.ByteArraySerializer;
+import io.pravega.client.stream.impl.ByteBufferSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkProducer.class);
 
-    private final EventStreamWriter<byte[]> writer;
+    private final EventStreamWriter<ByteBuffer> writer;
+    private final boolean includeTimestampInEvent;
 
-    public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory) {
+    public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
+                                    boolean includeTimestampInEvent) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
         writer = clientFactory.createEventWriter(
                 streamName,
-                new ByteArraySerializer(),
+                new ByteBufferSerializer(),
                 EventWriterConfig.builder().build());
+        this.includeTimestampInEvent = includeTimestampInEvent;
     }
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
-//        return CompletableFuture.completedFuture(null);
-        if (key.isPresent()) {
-            return writer.writeEvent(key.get(), payload);
+        ByteBuffer payloadToWrite;
+        if (includeTimestampInEvent) {
+            // We must create a new buffer for the combined event timestamp and payload.
+            // This requires copying the entire payload.
+            long eventTimestamp = System.currentTimeMillis();
+            payloadToWrite = ByteBuffer.allocate(Long.BYTES + payload.length);
+            payloadToWrite.putLong(eventTimestamp);
+            payloadToWrite.put(payload);
+            payloadToWrite.flip();
         } else {
-            return writer.writeEvent(payload);
+            payloadToWrite = ByteBuffer.wrap(payload);
+        }
+        if (key.isPresent()) {
+            return writer.writeEvent(key.get(), payloadToWrite);
+        } else {
+            return writer.writeEvent(payloadToWrite);
         }
     }
 
