@@ -37,13 +37,14 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkConsumer.class);
 
     private final ExecutorService executor;
     private final EventStreamReader<ByteBuffer> reader;
-    private volatile boolean closed = false;    // TODO: use atomic boolean?
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
                                     EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager,
@@ -63,7 +64,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         // Start a thread to read events.
         this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
-           while (!closed) {
+           while (!closed.get()) {
                try {
                    final EventRead<ByteBuffer> record = reader.readNextEvent(1000);
                    final ByteBuffer event = record.getEvent();
@@ -89,7 +90,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
 
     @Override
     public void close() throws Exception {
-        closed = true;
+        closed.set(true);
         this.executor.shutdown();
         this.executor.awaitTermination(1, TimeUnit.MINUTES);
         reader.close();
