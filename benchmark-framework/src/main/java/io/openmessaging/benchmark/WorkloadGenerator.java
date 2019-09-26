@@ -394,10 +394,10 @@ public class WorkloadGenerator implements AutoCloseable {
                     - stats.totalMessagesReceived;
 
             log.info(
-                    "Pub rate {} msg/s / {} MB/s | Cons rate {} msg/s / {} MB/s | Backlog: {} K | Pub Latency (ms) avg: {} - 50%: {} - 99%: {} - 99.9%: {} - Max: {}",
+                    "Pub rate {} msg/s / {} MB/s | Cons rate {} msg/s / {} MB/s | Backlog: {} msg | Pub Latency (ms) avg: {} - 50%: {} - 99%: {} - 99.9%: {} - Max: {}",
                     rateFormat.format(publishRate), throughputFormat.format(publishThroughput),
                     rateFormat.format(consumeRate), throughputFormat.format(consumeThroughput),
-                    dec.format(currentBacklog / 1000.0), //
+                    currentBacklog,
                     dec.format(microsToMillis(stats.publishLatency.getMean())),
                     dec.format(microsToMillis(stats.publishLatency.getValueAtPercentile(50))),
                     dec.format(microsToMillis(stats.publishLatency.getValueAtPercentile(99))),
