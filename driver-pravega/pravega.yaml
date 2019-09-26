@@ -27,3 +27,5 @@ client:
   #controllerURI: tcp://nautilus-pravega-controller.nautilus-pravega.svc.cluster.local:9090
   controllerURI: tcp://a61567522d97c11e9896f027921aa174-1004251556.us-west-2.elb.amazonaws.com:9090
   scopeName: examples
+
+#includeTimestampInEvent: False
