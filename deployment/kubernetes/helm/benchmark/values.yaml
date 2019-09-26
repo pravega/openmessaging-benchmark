@@ -21,7 +21,3 @@
 numWorkers: 6
 image: claudiofahey/openmessaging-benchmark:latest
 imagePullPolicy: Always
-
-# Below are used to create example-run.sh.
-workload: /workloads/workload.yaml
-driver: driver-pravega/pravega-nautilus.yaml

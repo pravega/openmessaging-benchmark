@@ -20,13 +20,13 @@
 name: tiny
 
 topics: 1
-partitionsPerTopic: 2
+partitionsPerTopic: 1
 keyDistributor: "NO_KEY"
 messageSize: 100
 payloadFile: "payload/payload-100b.data"
-subscriptionsPerTopic: 2
-consumerPerSubscription: 2
-producersPerTopic: 2
-producerRate: 10
+subscriptionsPerTopic: 1
+consumerPerSubscription: 1
+producersPerTopic: 1
+producerRate: 1
 consumerBacklogSizeGB: 0
 testDurationMinutes: 1

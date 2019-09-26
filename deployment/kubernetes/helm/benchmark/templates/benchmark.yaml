@@ -33,10 +33,6 @@ spec:
       imagePullPolicy: {{ .Values.imagePullPolicy }}
       image: {{ .Values.image }}
       env:
-        - name: NUM_WORKERS
-          value: "{{ .Values.numWorkers }}"
-        - name: WORKERS
-          value: '{{ template "workers" . }}'
         - name: pravega_client_auth_method
           value: Bearer
         - name: pravega_client_auth_loadDynamic
@@ -44,5 +40,4 @@ spec:
       command: ["sh", "-c"]
       args:
         - >
-          echo "bin/benchmark --drivers {{ .Values.driver }} --workers $WORKERS {{ .Values.workload }}" > example-run.sh &&
           sleep infinity

@@ -10,6 +10,7 @@ import subprocess
 import yaml
 import json
 import tempfile
+import time
 
 # P3 Libraries
 import p3_plugin_manager
@@ -22,6 +23,8 @@ from p3_test import TimeoutException, StorageTest, BaseTest
 _default_configs = {
     'openmessaging-benchmark': {
         'print_output': True,
+        'undeploy': False,
+        'build': False,
         },
     }
 
@@ -40,6 +43,23 @@ class PluginInfo(p3_plugin_manager.IP3Plugin):
 class OpenMessagingBenchmarkTest(BaseTest):
     def __init__(self, test_config, default_configs=_default_configs):
         super(OpenMessagingBenchmarkTest, self).__init__(test_config, default_configs=default_configs)
+
+    def build(self):
+        image = self.test_config['image']
+        tarball = self.test_config['tarball']
+        cmd = ['mvn', 'install']
+        subprocess.run(cmd, check=True, cwd='..')
+        cmd = [
+            'docker', 'build',
+            '--build-arg', 'BENCHMARK_TARBALL=%s' % tarball,
+            '-f', '../docker/Dockerfile',
+            '-t', image,
+            '..',
+                           ]
+        subprocess.run(cmd, check=True)
+        cmd = ['docker', 'push', image]
+        subprocess.run(cmd, check=True)
+
 
     def undeploy(self, wait=True):
         namespace = self.test_config['namespace']
@@ -64,7 +84,11 @@ class OpenMessagingBenchmarkTest(BaseTest):
         numWorkers = self.test_config['numWorkers']
         image = self.test_config['image']
         namespace = self.test_config['namespace']
-        self.undeploy(wait=True)
+        if self.test_config['build']:
+            self.undeploy(wait=False)
+            self.build()
+        if self.test_config['build'] or self.test_config['undeploy']:
+            self.undeploy(wait=True)
         cmd = [
             'helm', 'upgrade', '--install', '--timeout', '600', '--wait', '--debug',
             '%s-openmessaging-benchmarking' % namespace,
@@ -74,6 +98,19 @@ class OpenMessagingBenchmarkTest(BaseTest):
             '../deployment/kubernetes/helm/benchmark',
             ]
         subprocess.run(cmd, check=True)
+        cmd = [
+            'kubectl', 'wait', '--for=condition=Ready', '--timeout=60s',
+            '-n', namespace,
+            'pod/%s-openmessaging-benchmarking-driver' % namespace,
+            ]
+        subprocess.run(cmd, check=True)
+        for worker_number in range(numWorkers):
+            cmd = [
+                'kubectl', 'wait', '--for=condition=Ready', '--timeout=60s',
+                '-n', namespace,
+                'pod/%s-openmessaging-benchmarking-worker-%d' % (namespace, worker_number),
+                ]
+            subprocess.run(cmd, check=True)
 
 
     def run_test(self):
@@ -115,7 +152,9 @@ class OpenMessagingBenchmarkTest(BaseTest):
         if localWorker:
             workers_args = ''
         else:
-            workers_args = '--workers $WORKERS'
+            workers = ['http://%s-openmessaging-benchmarking-worker-%d.%s-openmessaging-benchmarking-worker:8080' %
+             (namespace, worker_number, namespace) for worker_number in range(numWorkers)]
+            workers_args = '--workers %s' % ','.join(workers)
 
         cmd = [
             'kubectl', 'exec', '-n', namespace, 'examples-openmessaging-benchmarking-driver', '--',
@@ -129,7 +168,7 @@ class OpenMessagingBenchmarkTest(BaseTest):
         if dry_run:
             print(' '.join(cmd))
         else:
-            subprocess.run(cmd, check=True)
+            system_command(cmd, print_output=True, shell=False, timeout=(workload['testDurationMinutes'] + 5) * 60)
 
             # Collect and extract logs
             cmd = [
