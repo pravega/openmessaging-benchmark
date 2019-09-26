@@ -363,14 +363,22 @@ public class LocalWorker implements Worker, ConsumerCallback {
         try {
             Thread.sleep(100);
 
-            for (BenchmarkProducer producer : producers) {
-                producer.close();
-            }
+            producers.parallelStream().forEach((BenchmarkProducer benchmarkProducer) -> {
+                try {
+                    benchmarkProducer.close();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
             producers.clear();
 
-            for (BenchmarkConsumer consumer : consumers) {
-                consumer.close();
-            }
+            consumers.parallelStream().forEach((BenchmarkConsumer benchmarkConsumer) -> {
+                try {
+                    benchmarkConsumer.close();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
             consumers.clear();
 
             if (benchmarkDriver != null) {
