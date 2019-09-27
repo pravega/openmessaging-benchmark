@@ -70,7 +70,7 @@ spec:
           image: {{ .Values.image }}
           resources:
             limits:
-              memory: "6Gi"
+              memory: "10Gi"
             requests:
               cpu: "1"
               memory: "6Gi"
