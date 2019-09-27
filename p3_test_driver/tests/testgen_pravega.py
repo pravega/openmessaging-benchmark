@@ -12,18 +12,19 @@ dockerRepository = 'claudiofahey'
 imageTag = 'dev'
 image = '%s/openmessaging-benchmark:%s' % (dockerRepository, imageTag)
 tarball = 'package/target/openmessaging-benchmark-0.0.1-SNAPSHOT-bin.tar.gz'
+build = True
 
 for repeat in range(1):
     for producerWorkers in [1]:
         numWorkers = 0 if localWorker else producerWorkers*2
         for testDurationMinutes in [15]:
-            for messageSize in [100]:
+            for messageSize in [10000]:
                 messageSize = int(messageSize)
                 eps = []
                 MBps = []
-                if messageSize <= 1e2:
+                if messageSize <= 100:
                     eps += [30, 100, 300, 1000, 3000, 10000, 30000, 50000, 75000, 100000, 140000, -1]
-                elif messageSize <= 1e4:
+                elif messageSize <= 10000:
                     eps += [30, 100, 300, 1000, 3000, 5000, 7000, 9000, -1]
                 else:
                     MBps = [50.0]
@@ -69,9 +70,10 @@ for repeat in range(1):
                                                     namespace=namespace,
                                                     image=image,
                                                     tarball=tarball,
-                                                    build=False,
+                                                    build=build,
                                                 )
                                                 test_list += [t]
+                                                # build = False
 
 
 # test_list = test_list[0:2]
