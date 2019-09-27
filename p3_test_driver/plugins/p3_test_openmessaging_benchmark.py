@@ -11,6 +11,7 @@ import yaml
 import json
 import tempfile
 import time
+from io import StringIO
 
 # P3 Libraries
 import p3_plugin_manager
@@ -25,6 +26,7 @@ _default_configs = {
         'print_output': True,
         'undeploy': False,
         'build': False,
+        'noop': False,
         },
     }
 
@@ -126,7 +128,6 @@ class OpenMessagingBenchmarkTest(BaseTest):
         numWorkers = rec['numWorkers']
         localWorker = rec['localWorker']
         namespace = rec['namespace']
-        dry_run = rec['dry_run']
 
         params = {
             'test_uuid': test_uuid,
@@ -165,23 +166,64 @@ class OpenMessagingBenchmarkTest(BaseTest):
             ' && tar -czvf /tmp/logs-' + test_uuid + '.tar.gz *' + test_uuid + '*.json' +
             ' && rm -f ' + payload_file_name
         ]
-        if dry_run:
-            print(' '.join(cmd))
-        else:
-            system_command(cmd, print_output=True, shell=False, timeout=(workload['testDurationMinutes'] + 5) * 60)
+        rec['_status_node'].set_status('Running command: %s' % str(cmd))
 
-            # Collect and extract logs
-            cmd = [
-                'kubectl', 'cp',
-                '%s/%s-openmessaging-benchmarking-driver:/tmp/logs-%s.tar.gz' % (namespace, namespace, test_uuid),
-                'logs/logs-%s.tar.gz' % test_uuid,
-                ]
-            subprocess.run(cmd, check=True)
-            cmd = [
-                'tar', '-xzvf', 'logs/logs-%s.tar.gz' % test_uuid,
-                '-C', 'logs',
-                                ]
-            subprocess.run(cmd, check=True)
+        t0 = datetime.datetime.utcnow()
+
+        return_code, output, errors = system_command(
+            cmd,
+            print_output=True,
+            shell=False,
+            timeout=(workload['testDurationMinutes'] + 5) * 60,
+            raise_on_error=False,
+            noop=rec['noop'],
+        )
+
+        t1 = datetime.datetime.utcnow()
+        td = t1 - t0
+
+        logging.info('exit_code=%d' % return_code)
+
+        rec['utc_begin'] = t0.isoformat()
+        rec['utc_end'] = t1.isoformat()
+        rec['elapsed_sec'] = time_duration_to_seconds(td)
+        rec['error'] = (return_code != 0)
+        rec['exit_code'] = return_code
+        rec['command_timed_out'] = (return_code == -1)
+        rec['output'] = output
+        rec['errors'] = errors
+
+        # Collect logs to store in results.json
+        cmd = [
+            'kubectl', 'exec', '-n', namespace, 'examples-openmessaging-benchmarking-driver', '--',
+            'bash', '-c',
+            'cat *' + test_uuid + '*.json',
+        ]
+        return_code, results_json, errors = system_command(cmd, print_output=False, shell=False, raise_on_error=False)
+        rec['omb_results'] = json.load(StringIO(results_json.decode()))
+
+        # Collect and extract logs (outside of results.json) (not required)
+        cmd = [
+            'kubectl', 'cp',
+            '%s/%s-openmessaging-benchmarking-driver:/tmp/logs-%s.tar.gz' % (namespace, namespace, test_uuid),
+            'logs/logs-%s.tar.gz' % test_uuid,
+            ]
+        subprocess.run(cmd, check=True)
+        cmd = [
+            'tar', '-xzvf', 'logs/logs-%s.tar.gz' % test_uuid,
+            '-C', 'logs',
+        ]
+        subprocess.run(cmd, check=True)
+
+        rec['run_as_test'] = rec['test']
+        if 'record_as_test' in rec:
+            rec['test'] = rec['record_as_test']
+        if 'result_filename' in rec:
+            record_result(rec, rec['result_filename'])
+        if rec['command_timed_out']:
+            raise TimeoutException()
+        if rec['error']:
+            raise Exception('Command failed')
 
 
 def create_yaml_file(data, file_name, namespace):

@@ -1,2 +1,2 @@
-status_html: /tmp/p3_test_driver_status.html
-test_driver_log_filename: "/tmp/p3_test_driver.log"
+status_html: data/status/pravega.html
+test_driver_log_filename: data/logs/p3_test_driver.log

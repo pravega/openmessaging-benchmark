@@ -195,7 +195,11 @@ def main():
         logging.info('There are %d tests:' % len(configs))
         logging.info('\n%s' % json.dumps(full_configs, sort_keys=True, indent=4, ensure_ascii=False))
     else:
-        status_tree = StatusTreeServer(status_file=common_config.get('status_html',None))
+
+        status_file = common_config.get('status_html',None)
+        if status_file:
+            mkdir_for_file(status_file)
+        status_tree = StatusTreeServer(status_file=status_file)
         with status_tree.context():
             run_all_tests(configs, skip=options.skip, num_tests=options.num_tests, status_tree=status_tree)
 
