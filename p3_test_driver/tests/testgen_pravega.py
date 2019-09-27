@@ -6,34 +6,36 @@ import sys
 
 test_list = []
 
-localWorker = True
+localWorker = False
 namespace = 'examples'
 dockerRepository = 'claudiofahey'
 imageTag = 'dev'
 image = '%s/openmessaging-benchmark:%s' % (dockerRepository, imageTag)
 tarball = 'package/target/openmessaging-benchmark-0.0.1-SNAPSHOT-bin.tar.gz'
 
-for repeat in range(3):
+for repeat in range(1):
     for producerWorkers in [1]:
         numWorkers = 0 if localWorker else producerWorkers*2
-        for testDurationMinutes in [5]:
-            for messageSize in [1e2]:
+        for testDurationMinutes in [15]:
+            for messageSize in [100]:
                 messageSize = int(messageSize)
-                eps = [-1]
+                eps = []
                 MBps = []
                 if messageSize <= 1e2:
-                    eps += [50000]
+                    eps += [30, 100, 300, 1000, 3000, 10000, 30000, 50000, 75000, 100000, 140000, -1]
+                elif messageSize <= 1e4:
+                    eps += [30, 100, 300, 1000, 3000, 5000, 7000, 9000, -1]
                 else:
                     MBps = [50.0]
                 eps += [x * 1e6 / messageSize for x in MBps]
-                for producerRateEventsPerSec in [0]:
+                for producerRateEventsPerSec in eps:
                     for topics in [1]:
-                        for partitionsPerTopic in [1]:
-                            for producersPerWorker in [1]:
+                        for partitionsPerTopic in [16]:
+                            for producersPerWorker in [16]:
                                 producersPerTopic = producersPerWorker * producerWorkers
                                 for consumerBacklogSizeGB in [0]:
                                     for subscriptionsPerTopic in [1]:
-                                        for consumerPerSubscription in [producersPerTopic]:
+                                        for consumerPerSubscription in [partitionsPerTopic]:
                                             for includeTimestampInEvent in [True]:
                                                 driver = {
                                                     'name': 'Pravega',
@@ -45,9 +47,9 @@ for repeat in range(3):
                                                     'includeTimestampInEvent': includeTimestampInEvent,
                                                 }
                                                 workload = {
+                                                    'messageSize': messageSize,
                                                     'topics':  topics,
                                                     'partitionsPerTopic': partitionsPerTopic,
-                                                    'messageSize': messageSize,
                                                     'subscriptionsPerTopic': subscriptionsPerTopic,
                                                     'consumerPerSubscription': consumerPerSubscription,
                                                     'producersPerTopic': producersPerTopic,
@@ -67,7 +69,7 @@ for repeat in range(3):
                                                     namespace=namespace,
                                                     image=image,
                                                     tarball=tarball,
-                                                    build=True,
+                                                    build=False,
                                                 )
                                                 test_list += [t]
 
