@@ -1,0 +1,5 @@
+status_html: data/status/pravega.html
+test_driver_log_filename: data/logs/p3_test_driver.log
+ssh_host: localhost
+ssh_user: faheyc
+ssh_identity_file: /home/faheyc/.ssh/pulsar_aws

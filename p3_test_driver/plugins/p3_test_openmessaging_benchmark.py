@@ -18,7 +18,7 @@ import p3_plugin_manager
 import p3_storage
 from p3_metrics import MetricsCollector
 from p3_util import record_result
-from system_command import system_command, time_duration_to_seconds
+from system_command import system_command, time_duration_to_seconds, ssh
 from p3_test import TimeoutException, StorageTest, BaseTest
 
 _default_configs = {
@@ -35,16 +35,21 @@ class PluginInfo(p3_plugin_manager.IP3Plugin):
     def get_plugin_info(self):
         return [
             {
-            'class_type': 'test', 
-            'class_name': 'openmessaging-benchmark',
-            'class': OpenMessagingBenchmarkTest,
+                'class_type': 'test',
+                'class_name': 'openmessaging-benchmark-k8s',
+                'class': OpenMessagingBenchmarkK8sTest,
+            },
+            {
+                'class_type': 'test',
+                'class_name': 'openmessaging-benchmark-ssh',
+                'class': OpenMessagingBenchmarkSSHTest,
             },
         ]
 
 
-class OpenMessagingBenchmarkTest(BaseTest):
+class OpenMessagingBenchmarkK8sTest(BaseTest):
     def __init__(self, test_config, default_configs=_default_configs):
-        super(OpenMessagingBenchmarkTest, self).__init__(test_config, default_configs=default_configs)
+        super(OpenMessagingBenchmarkK8sTest, self).__init__(test_config, default_configs=default_configs)
 
     def build(self):
         image = self.test_config['image']
@@ -234,3 +239,118 @@ def create_yaml_file(data, file_name, namespace):
     cmd = ['kubectl', 'cp', f.name, '%s/%s-openmessaging-benchmarking-driver:%s' % (namespace, namespace, file_name)]
     subprocess.run(cmd, check=True)
     os.unlink(f.name)
+
+
+class OpenMessagingBenchmarkSSHTest(BaseTest):
+    def __init__(self, test_config, default_configs=_default_configs):
+        super(OpenMessagingBenchmarkSSHTest, self).__init__(test_config, default_configs=default_configs)
+
+    def build(self):
+        tarball = self.test_config['tarball']
+        cmd = ['mvn', 'install']
+        subprocess.run(cmd, check=True, cwd='..')
+
+    def undeploy(self, wait=True):
+        pass
+
+    def deploy(self):
+        pass
+
+    def run_test(self):
+        rec = self.test_config
+
+        test_uuid = rec['test_uuid']
+        driver = rec['driver']
+        workload = rec['workload']
+        numWorkers = rec['numWorkers']
+        localWorker = rec['localWorker']
+
+        rec['git_commit'] = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, check=True).stdout.decode()
+        workload['name'] = test_uuid
+
+        driver_file_name = '/tmp/driver-' +test_uuid + '.yaml'
+        workload_file_name = '/tmp/workload-' + test_uuid + '.yaml'
+        payload_file_name = '/tmp/payload-' + test_uuid + '.data'
+
+        workload['payloadFile'] = payload_file_name
+
+        if localWorker:
+            workers_args = ''
+        else:
+            # TODO
+            workers = ['http://%s-openmessaging-benchmarking-worker-%d.%s-openmessaging-benchmarking-worker:8080' %
+                       (namespace, worker_number, namespace) for worker_number in range(numWorkers)]
+            workers_args = '--workers %s' % ','.join(workers)
+
+        self.deploy()
+
+        self.create_yaml_file(driver, driver_file_name)
+        self.create_yaml_file(workload, workload_file_name)
+
+        cmd = (
+            'cd /home/faheyc/nautilus/openmessaging-benchmark'
+            ' && dd if=/dev/urandom of=' + payload_file_name + ' bs=' + str(workload['messageSize']) + ' count=1 status=none' +
+            ' && bin/benchmark --drivers ' + driver_file_name + ' ' + workers_args + ' ' + workload_file_name
+        )
+        rec['_status_node'].set_status('Running command: %s' % str(cmd))
+
+        t0 = datetime.datetime.utcnow()
+
+        return_code, output, errors = ssh(
+            rec['ssh_user'],
+            rec['ssh_host'],
+            cmd,
+            raise_on_error=False,
+            stderr_to_stdout=False,
+        )
+
+        t1 = datetime.datetime.utcnow()
+        td = t1 - t0
+
+        rec['utc_begin'] = t0.isoformat()
+        rec['utc_end'] = t1.isoformat()
+        rec['elapsed_sec'] = time_duration_to_seconds(td)
+        rec['error'] = (return_code != 0)
+        rec['exit_code'] = return_code
+        rec['command_timed_out'] = (return_code == -1)
+        rec['output'] = output
+        rec['errors'] = errors
+
+        # Collect logs to store in results.json
+        try:
+            return_code, results_json, errors = ssh(
+                rec['ssh_user'],
+                rec['ssh_host'],
+                'cat /opt/benchmark/*' + test_uuid + '*.json',
+                opts='-i ' + self.test_config['ssh_identity_file'],
+                print_output=False,
+                raise_on_error=True,
+                stderr_to_stdout=False,
+            )
+            rec['omb_results'] = json.load(StringIO(results_json.decode()))
+        except Exception as e:
+            logging.warn('Unable to collect logs: %s' % e)
+
+        rec['run_as_test'] = rec['test']
+        if 'record_as_test' in rec:
+            rec['test'] = rec['record_as_test']
+        if 'result_filename' in rec:
+            record_result(rec, rec['result_filename'])
+        if rec['command_timed_out']:
+            raise TimeoutException()
+        if rec['error']:
+            raise Exception('Command failed')
+
+    def create_yaml_file(self, data, file_name):
+        """Creates a YAML file on the driver host."""
+        f = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        yaml.dump(data, f, default_flow_style=False)
+        f.close()
+        cmd = [
+            'scp',
+            '-i', self.test_config['ssh_identity_file'],
+            f.name,
+            '%s@%s:%s' % (self.test_config['ssh_user'], self.test_config['ssh_host'], file_name),
+        ]
+        subprocess.run(cmd, check=True)
+        os.unlink(f.name)
