@@ -194,6 +194,8 @@ public class LocalWorker implements Worker, ConsumerCallback {
 
     @Override
     public void startLoad(ProducerWorkAssignment producerWorkAssignment) {
+        if (producers.size() == 0)
+            return;
         int processors = Runtime.getRuntime().availableProcessors();
         int producersPerProcessor = (producers.size() + processors - 1) / processors;
         log.info("producers={}, availableProcessors={}, producersPerProcessor={}", producers.size(), processors, producersPerProcessor);
