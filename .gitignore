@@ -22,3 +22,5 @@ logs/
 # IntelliJ artifacts
 .idea/
 *.iml
+
+p3_test_driver/data

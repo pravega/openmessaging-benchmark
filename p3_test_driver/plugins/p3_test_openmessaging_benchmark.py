@@ -2,33 +2,34 @@
 # Written by Claudio Fahey (claudio.fahey@emc.com)
 
 from __future__ import division
+
+import datetime
+import json
 import logging
 import os
-import sys
-import datetime
-import subprocess
-import yaml
-import json
-import tempfile
-import time
-from io import StringIO
-
-# P3 Libraries
 import p3_plugin_manager
-import p3_storage
-from p3_metrics import MetricsCollector
+import subprocess
+import tempfile
+import yaml
+from io import StringIO
+from p3_test import TimeoutException, BaseTest
 from p3_util import record_result
 from system_command import system_command, time_duration_to_seconds, ssh
-from p3_test import TimeoutException, StorageTest, BaseTest
 
 _default_configs = {
+    'openmessaging-benchmark-k8s': {
+        'print_output': True,
+        'undeploy': False,
+        'build': False,
+        'noop': False,
+    },
     'openmessaging-benchmark': {
         'print_output': True,
         'undeploy': False,
         'build': False,
         'noop': False,
-        },
-    }
+    },
+}
 
 
 class PluginInfo(p3_plugin_manager.IP3Plugin):
@@ -36,12 +37,12 @@ class PluginInfo(p3_plugin_manager.IP3Plugin):
         return [
             {
                 'class_type': 'test',
-                'class_name': 'openmessaging-benchmark-k8s',
+                'class_name': 'openmessaging-benchmark-k8s',    # TODO: allow same class name as below
                 'class': OpenMessagingBenchmarkK8sTest,
             },
             {
                 'class_type': 'test',
-                'class_name': 'openmessaging-benchmark-ssh',
+                'class_name': 'openmessaging-benchmark',
                 'class': OpenMessagingBenchmarkSSHTest,
             },
         ]
@@ -246,9 +247,10 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
         super(OpenMessagingBenchmarkSSHTest, self).__init__(test_config, default_configs=default_configs)
 
     def build(self):
-        tarball = self.test_config['tarball']
-        cmd = ['mvn', 'install']
-        subprocess.run(cmd, check=True, cwd='..')
+        # tarball = self.test_config['tarball']
+        # cmd = ['mvn', 'install']
+        # subprocess.run(cmd, check=True, cwd='..')
+        pass
 
     def undeploy(self, wait=True):
         pass
@@ -265,30 +267,50 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
         numWorkers = rec['numWorkers']
         localWorker = rec['localWorker']
 
-        rec['git_commit'] = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, check=True).stdout.decode()
+        rec['git_commit'] = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, check=True).stdout.decode().rstrip()
         workload['name'] = test_uuid
-
         driver_file_name = '/tmp/driver-' +test_uuid + '.yaml'
         workload_file_name = '/tmp/workload-' + test_uuid + '.yaml'
         payload_file_name = '/tmp/payload-' + test_uuid + '.data'
-
         workload['payloadFile'] = payload_file_name
 
+        self.deploy()
+
+        if rec.get('ssh_host', '') == '':
+            driver_deploy_dir = '../driver-%s/deploy' % driver['name'].lower()
+            rec['ssh_host'] = subprocess.run(
+                ['terraform', 'output', 'client_ssh_host'],
+                cwd=driver_deploy_dir,
+                check=True,
+                capture_output=True,
+            ).stdout.decode().rstrip()
+            logging.info('ssh_host=%s' % rec['ssh_host'])
+
         if localWorker:
+            # TODO: Doesn't work because workers.yaml exists.
             workers_args = ''
         else:
-            # TODO
-            workers = ['http://%s-openmessaging-benchmarking-worker-%d.%s-openmessaging-benchmarking-worker:8080' %
-                       (namespace, worker_number, namespace) for worker_number in range(numWorkers)]
+            return_code, results_yaml, errors = self.ssh('cat /opt/benchmark/workers.yaml')
+            workers = yaml.load(StringIO(results_yaml))['workers']
+            workers = workers[0:numWorkers]
+            logging.info("workers=%s" % str(workers))
+            rec['omb_workers'] = workers
             workers_args = '--workers %s' % ','.join(workers)
 
-        self.deploy()
+        if driver['name'] == 'Pulsar':
+            return_code, results_yaml, errors = self.ssh('cat /opt/benchmark/driver-pulsar/pulsar.yaml')
+            deployed_driver = yaml.load(StringIO(results_yaml))
+            driver['client']['serviceUrl'] = deployed_driver['client']['serviceUrl']
+            driver['client']['httpUrl'] = deployed_driver['client']['httpUrl']
+        else:
+            raise Exception('Unsupported driver')
 
         self.create_yaml_file(driver, driver_file_name)
         self.create_yaml_file(workload, workload_file_name)
 
         cmd = (
-            'cd /home/faheyc/nautilus/openmessaging-benchmark'
+            'cd /opt/benchmark' +
+            ' && sudo chmod go+rw .' +
             ' && dd if=/dev/urandom of=' + payload_file_name + ' bs=' + str(workload['messageSize']) + ' count=1 status=none' +
             ' && bin/benchmark --drivers ' + driver_file_name + ' ' + workers_args + ' ' + workload_file_name
         )
@@ -296,13 +318,7 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
 
         t0 = datetime.datetime.utcnow()
 
-        return_code, output, errors = ssh(
-            rec['ssh_user'],
-            rec['ssh_host'],
-            cmd,
-            raise_on_error=False,
-            stderr_to_stdout=False,
-        )
+        return_code, output, errors = self.ssh(cmd, raise_on_error=False)
 
         t1 = datetime.datetime.utcnow()
         td = t1 - t0
@@ -316,20 +332,16 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
         rec['output'] = output
         rec['errors'] = errors
 
-        # Collect logs to store in results.json
+        # Collect results to store in results.json
         try:
-            return_code, results_json, errors = ssh(
-                rec['ssh_user'],
-                rec['ssh_host'],
+            return_code, results_json, errors = self.ssh(
                 'cat /opt/benchmark/*' + test_uuid + '*.json',
-                opts='-i ' + self.test_config['ssh_identity_file'],
                 print_output=False,
-                raise_on_error=True,
-                stderr_to_stdout=False,
             )
             rec['omb_results'] = json.load(StringIO(results_json.decode()))
         except Exception as e:
             logging.warn('Unable to collect logs: %s' % e)
+            rec['error'] = True
 
         rec['run_as_test'] = rec['test']
         if 'record_as_test' in rec:
@@ -354,3 +366,15 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
         ]
         subprocess.run(cmd, check=True)
         os.unlink(f.name)
+
+    def ssh(self, command, raise_on_error=True, stderr_to_stdout=False, print_output=True, **kwargs):
+        return ssh(
+            self.test_config['ssh_user'],
+            self.test_config['ssh_host'],
+            command,
+            opts='-i ' + self.test_config['ssh_identity_file'],
+            print_output=print_output,
+            raise_on_error=raise_on_error,
+            stderr_to_stdout=stderr_to_stdout,
+            **kwargs
+        )
