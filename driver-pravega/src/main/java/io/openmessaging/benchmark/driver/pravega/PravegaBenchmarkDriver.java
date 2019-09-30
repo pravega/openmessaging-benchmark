@@ -97,6 +97,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         synchronized (createdTopics) {
             createdTopics.add(topic);
         }
+        streamManager.createScope(scopeName);
         streamManager.createStream(scopeName, topic,
                 StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(partitions)).build());
         return CompletableFuture.completedFuture(null);
