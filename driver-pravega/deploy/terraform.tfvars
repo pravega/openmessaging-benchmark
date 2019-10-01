@@ -13,9 +13,9 @@ instance_types = {
 
 num_instances = {
   "controller"   = 1
-  "segmentstore" = 1
+  "segmentstore" = 3
   "bookkeeper"   = 3
-  "zookeeper"    = 1
-  "client"       = 2
+  "zookeeper"    = 3
+  "client"       = 4
   "prometheus"   = 1
 }

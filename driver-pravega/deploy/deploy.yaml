@@ -43,6 +43,34 @@
 #        msg: "Tier 2 {{ groups['tier2'][0] }}"
 #      with_items: "{{ groups['tier2'] }}"
 
+- name: Uninstall
+  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["uninstall"]
+  connection: ssh
+  become: true
+  tasks:
+    - name: Stop services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+      with_items:
+        - "benchmark-worker"
+        - "pravega-segmentstore"
+        - "pravega-controller"
+        - "bookkeeper"
+        - "zookeeper"
+    - name: Delete files on hosts
+      shell: "rm -rf /opt/pravega /opt/zookeeper /opt/bookkeeper /opt/benchmark /mnt/journal/* /mnt/storage/*"
+      args:
+        warn: no
+    - name: Delete files on tier 2
+      shell: "rm -rf /mnt/tier2/*"
+      when: groups['segmentstore'][0] == inventory_hostname
+      args:
+        warn: no
+
 - name: Get common facts
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
   tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
@@ -52,16 +80,14 @@
     - set_fact:
         zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
         controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
-        pravegaVersion: "0.5.1"
+        pravegaVersion: "0.6.0-2373.aa11841-SNAPSHOT"
         zookeeperVersion: "3.5.4-beta"
         bookkeeperVersion: "4.7.3"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
-    - debug:
-        msg: "zookeeperServers: {{ zookeeperServers }}"
 
 - name: Common installation
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
-  tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["nmon","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
   connection: ssh
   become: true
   tasks:
@@ -83,6 +109,13 @@
       shell: |
         echo 'LANG=en_US.utf-8
               LC_ALL=en_US.utf-8' > /etc/environment
+    - name: Download nmon
+      unarchive:
+        src: "http://sourceforge.net/projects/nmon/files/nmon16j.tar.gz"
+        remote_src: yes
+        dest: /tmp
+    - command: cp /tmp/nmon_AMD64_ubuntu1804 /usr/local/bin/nmon
+    - command: chmod a+x /usr/local/bin/nmon
 
 - name: ZooKeeper setup
   hosts: zookeeper
@@ -124,12 +157,20 @@
     - name: Initialize ZooKeeper
       shell: >
         bin/zkServer-initialize.sh init --force --myid={{ zid }} && \
-        bin/zkCli.sh create /pravega && \
-        bin/zkCli.sh create /pravega/pravega-cluster && \
-        bin/zkCli.sh create /pravega/pravega-cluster/bookkeeper
+        (until bin/zkCli.sh ls / ; do sleep 1; done)
       args:
         chdir: /opt/zookeeper
       when: groups['zookeeper'][0] == inventory_hostname
+    - name: Create Zookeeper nodes
+      shell: >
+        bin/zkCli.sh create {{ item }}
+      args:
+        chdir: /opt/zookeeper
+      when: groups['zookeeper'][0] == inventory_hostname
+      with_items:
+        - /pravega
+        - /pravega/pravega-cluster
+        - /pravega/pravega-cluster/bookkeeper
 
 - name: Pravega common installation
   hosts: ["controller", "segmentstore"]
@@ -142,8 +183,10 @@
     - file: path=/opt/pravega state=directory
     - name: Download Pravega binary package
       unarchive:
-        src: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
-        remote_src: yes
+#        src: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
+#        remote_src: yes
+        src: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
+        remote_src: no
         dest: /opt/pravega
         extra_opts: ["--strip-components=1"]
     - template:
@@ -175,8 +218,8 @@
   become: true
   tasks:
     - systemd:
-        state: stopped
         name: "bookkeeper"
+        state: stopped
       ignore_errors: yes
     - name: Unmount disks
       mount:
@@ -351,3 +394,43 @@
         daemon_reload: yes
         state: restarted
         enabled: yes
+
+- name: Prometheus installation
+  hosts: prometheus
+  tags: ["prometheus"]
+  connection: ssh
+  become: true
+  tasks:
+    - name: Add Extras Repo
+      shell: yum-config-manager --enable rhui-REGION-rhel-server-extras
+    - name: Install RPM packages
+      yum: pkg={{ item }} state=latest
+      with_items:
+        - docker
+#    - set_fact:
+#        prometheusVersion: "2.2.1"
+#    - file: path=/opt/prometheus state=absent
+#    - file: path=/opt/prometheus state=directory
+#    - name: Download Prometheus Binary Package
+#      unarchive:
+#        src: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheusVersion }}/prometheus-{{ prometheusVersion }}.linux-amd64.tar.gz"
+#        remote_src: yes
+#        dest: /opt/prometheus
+#        extra_opts: ["--strip-components=1"]
+#    - set_fact:
+#        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+- name: Run Pravega Tester
+  hosts: prometheus
+  tags: ["pravega-tester"]
+  connection: ssh
+  become: true
+  tasks:
+    - shell: >
+        docker run --rm \
+        -e PRAVEGA_CONTROLLER_URI={{ controllerUrl }} \
+        -e PRAVEGA_SCOPE="examples" \
+        -e CREATE_SCOPE="true" \
+        -e pravega_client_auth_method= \
+        -e pravega_client_auth_loadDynamic= \
+        claudiofahey/pravega-tester:0.5.0

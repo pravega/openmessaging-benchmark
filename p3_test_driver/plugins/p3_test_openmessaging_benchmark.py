@@ -297,7 +297,11 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
             rec['omb_workers'] = workers
             workers_args = '--workers %s' % ','.join(workers)
 
-        if driver['name'] == 'Pulsar':
+        if driver['name'] == 'Pravega':
+            return_code, results_yaml, errors = self.ssh('cat /opt/benchmark/driver-pravega/pravega.yaml')
+            deployed_driver = yaml.load(StringIO(results_yaml))
+            driver['client']['controllerURI'] = deployed_driver['client']['controllerURI']
+        elif driver['name'] == 'Pulsar':
             return_code, results_yaml, errors = self.ssh('cat /opt/benchmark/driver-pulsar/pulsar.yaml')
             deployed_driver = yaml.load(StringIO(results_yaml))
             driver['client']['serviceUrl'] = deployed_driver['client']['serviceUrl']

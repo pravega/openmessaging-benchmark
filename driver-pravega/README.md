@@ -1,5 +1,17 @@
 # Pravega Driver for OpenMessaging Benchmark
 
+
+## Build Pravega
+
+```
+cd
+git clone https://github.com/pravega/pravega
+cd pravega
+git checkout aa11841
+./gradlew install
+```
+
+
 ## Build Docker container
 
 ```
@@ -15,6 +27,19 @@ kubectl run -n examples --rm -it --image claudiofahey/openmessaging-benchmark:la
 
 ```
 ./deploy-k8s-components.sh
+```
+
+# Deployment to AWS
+
+```
+# Install Terraform 0.11.14
+# Install Ansible
+mvn install
+ssh-keygen -f ~/.ssh/pravega_aws
+cd driver-pravega/deploy
+terraform_0.11.14 init
+terraform_0.11.14 apply
+ansible-playbook --user ec2-user --inventory `which terraform-inventory` deploy.yaml
 ```
 
 ## Run Jupyter for data analysis
@@ -33,16 +58,7 @@ P3 Test Driver can be used to run multiple tests automatically.
 
 ```
 cd ../p3_test_driver
-tests/testgen_pravega.py | ./p3_test_driver.py -t - -c config/pravega.config.yaml
+tests/testgen_pravega.py | ./p3_test_driver.py -t - -c config/pravega_k8s.config.yaml
+tests/testgen_pravega_ssh.py | ./p3_test_driver.py -t - -c config/pravega_ssh.config.yaml
 ```
 
-# Deployment to AWS
-
-```
-mvn install
-ssh-keygen -f ~/.ssh/pravega_aws
-cd driver-pravega/deploy
-terraform_0.11.14 init
-terraform_0.11.14 apply
-ansible-playbook --user ec2-user --inventory `which terraform-inventory` deploy.yaml
-```
