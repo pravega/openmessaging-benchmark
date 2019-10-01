@@ -14,22 +14,19 @@ for repeat in range(1):
     for producerWorkers in [2]:
         numWorkers = 0 if localWorker else producerWorkers*2
         for testDurationMinutes in [5]:
-            for messageSize in [100]:
+            for messageSize in [100, 10000]:
                 messageSize = int(messageSize)
                 eps = []
                 MBps = []
                 ppw = []
                 if messageSize <= 100:
-                    # eps += [30, 100, 300, 1000, 3000, 10000, 30000, 50000, 75000, 100000, 140000, -1]
-                    # eps = [3e1, 1e2, 3e3, 1e4, 3e4, 5e4, 1e5, 3e5, 1e6, 3e6, -1]
-                    eps = [5e4]
+                    eps = [3e1, 1e2, 3e2, 1e3, 3e3, 1e4, 3e4, 5e4, 1e5, 3e5, 1e6, 3e6, -1]
                     ppw = [2]
                 elif messageSize <= 10000:
-                    eps += [30, 100, 300, 1000, 3000, 5000, 7000, 9000, -1]
-                    ppw = [16]
+                    eps += [3e1, 1e2, 3e2, 1e3, 3e3, 1e4, 3e4, -1]
+                    ppw = [2]
                 else:
                     eps += [1, 3, 10, 30, 50, 70, 90, -1]
-                    #MBps += [50.0]
                     ppw = [4]
                 eps += [x * 1e6 / messageSize for x in MBps]
                 for producerRateEventsPerSec in eps:
