@@ -1,10 +1,10 @@
 provider "aws" {
   region  = "${var.region}"
-  version = "1.8"
+  version = "~> 2.7"
 }
 
 provider "random" {
-  version = "1.1"
+  version = "~> 2.1"
 }
 
 variable "public_key_path" {
@@ -13,7 +13,7 @@ Path to the SSH public key to be used for authentication.
 Ensure this keypair is added to your local SSH agent so provisioners can
 connect.
 
-Example: ~/.ssh/pulsar_aws.pub
+Example: ~/.ssh/pravega_aws.pub
 DESCRIPTION
 }
 
@@ -22,7 +22,7 @@ resource "random_id" "hash" {
 }
 
 variable "key_name" {
-  default     = "pulsar-benchmark-key"
+  default     = "pravega-benchmark-key"
   description = "Desired name prefix for the AWS key pair"
 }
 
@@ -41,14 +41,15 @@ variable "num_instances" {
 # Create a VPC to launch our instances into
 resource "aws_vpc" "benchmark_vpc" {
   cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames = true
 
   tags {
-    Name = "Pulsar-Benchmark-VPC-${random_id.hash.hex}"
+    Name = "Pravega-Benchmark-VPC-${random_id.hash.hex}"
   }
 }
 
 # Create an internet gateway to give our subnet access to the outside world
-resource "aws_internet_gateway" "pulsar" {
+resource "aws_internet_gateway" "pravega" {
   vpc_id = "${aws_vpc.benchmark_vpc.id}"
 }
 
@@ -56,7 +57,7 @@ resource "aws_internet_gateway" "pulsar" {
 resource "aws_route" "internet_access" {
   route_table_id         = "${aws_vpc.benchmark_vpc.main_route_table_id}"
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = "${aws_internet_gateway.pulsar.id}"
+  gateway_id             = "${aws_internet_gateway.pravega.id}"
 }
 
 # Create a subnet to launch our instances into
@@ -67,7 +68,7 @@ resource "aws_subnet" "benchmark_subnet" {
 }
 
 resource "aws_security_group" "benchmark_security_group" {
-  name   = "terraform-pulsar-${random_id.hash.hex}"
+  name   = "terraform-pravega-${random_id.hash.hex}"
   vpc_id = "${aws_vpc.benchmark_vpc.id}"
 
   # SSH access from anywhere
@@ -87,12 +88,13 @@ resource "aws_security_group" "benchmark_security_group" {
   }
 
   # Prometheus/Dashboard access
-  ingress {
-    from_port   = 9090
-    to_port     = 9090
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # Below disabled because 9090 is also used by Pravega Controller.
+  #ingress {
+  #  from_port   = 9090
+  #  to_port     = 9090
+  #  protocol    = "tcp"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
   ingress {
     from_port   = 3000
     to_port     = 3000
@@ -131,16 +133,42 @@ resource "aws_instance" "zookeeper" {
   }
 }
 
-resource "aws_instance" "pulsar" {
+resource "aws_instance" "controller" {
   ami                    = "${var.ami}"
-  instance_type          = "${var.instance_types["pulsar"]}"
+  instance_type          = "${var.instance_types["controller"]}"
   key_name               = "${aws_key_pair.auth.id}"
   subnet_id              = "${aws_subnet.benchmark_subnet.id}"
   vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
-  count                  = "${var.num_instances["pulsar"]}"
+  count                  = "${var.num_instances["controller"]}"
 
   tags {
-    Name = "pulsar-${count.index}"
+    Name = "controller-${count.index}"
+  }
+}
+
+resource "aws_instance" "segmentstore" {
+  ami                    = "${var.ami}"
+  instance_type          = "${var.instance_types["segmentstore"]}"
+  key_name               = "${aws_key_pair.auth.id}"
+  subnet_id              = "${aws_subnet.benchmark_subnet.id}"
+  vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
+  count                  = "${var.num_instances["segmentstore"]}"
+
+  tags {
+    Name = "segmentstore-${count.index}"
+  }
+}
+
+resource "aws_instance" "bookkeeper" {
+  ami                    = "${var.ami}"
+  instance_type          = "${var.instance_types["bookkeeper"]}"
+  key_name               = "${aws_key_pair.auth.id}"
+  subnet_id              = "${aws_subnet.benchmark_subnet.id}"
+  vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
+  count                  = "${var.num_instances["bookkeeper"]}"
+
+  tags {
+    Name = "bookkeeper-${count.index}"
   }
 }
 
@@ -153,7 +181,7 @@ resource "aws_instance" "client" {
   count                  = "${var.num_instances["client"]}"
 
   tags {
-    Name = "pulsar-client-${count.index}"
+    Name = "pravega-client-${count.index}"
   }
 }
 
@@ -170,10 +198,38 @@ resource "aws_instance" "prometheus" {
   }
 }
 
+resource "aws_efs_file_system" "tier2" {
+  tags = {
+    Name = "pravega-tier2"
+  }
+}
+
+resource "aws_efs_mount_target" "tier2" {
+  file_system_id  = "${aws_efs_file_system.tier2.id}"
+  subnet_id       = "${aws_subnet.benchmark_subnet.id}"
+  security_groups = ["${aws_security_group.benchmark_security_group.id}"]
+}
+
 output "client_ssh_host" {
   value = "${aws_instance.client.0.public_ip}"
 }
 
 output "prometheus_host" {
   value = "${aws_instance.prometheus.0.public_ip}"
+}
+
+output "controller_0_ssh_host" {
+  value = "${aws_instance.controller.0.public_ip}"
+}
+
+output "segmentstore_0_ssh_host" {
+  value = "${aws_instance.segmentstore.0.public_ip}"
+}
+
+output "bookkeeper_0_ssh_host" {
+  value = "${aws_instance.bookkeeper.0.public_ip}"
+}
+
+output "zookeeper_0_ssh_host" {
+  value = "${aws_instance.zookeeper.0.public_ip}"
 }

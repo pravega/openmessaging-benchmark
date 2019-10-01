@@ -17,15 +17,179 @@
 # under the License.
 #
 
-- name: Format and mount disks for Pulsar/BookKeeper hosts
-  hosts: pulsar
+#- name: List host addresses
+#  hosts: all
+#  become: false
+#  tasks:
+#    - debug:
+#        msg: "Zookeeper servers {{ item }}"
+#      with_items: "{{ groups['zookeeper'] }}"
+#    - debug:
+#        msg: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | join(',') }}"
+#      with_items: "{{ groups['zookeeper'] }}"
+#    - debug:
+#        msg: "Pulsar/BookKeeper servers {{ item }}"
+#      with_items: "{{ groups['pulsar'] }}"
+#    - debug:
+#        msg: "Benchmark clients {{ item }}"
+#      with_items: "{{ groups['client'] }}"
+
+#- name: Test
+#  hosts: segmentstore
+#  tags: test1
+#  become: false
+#  tasks:
+#    - debug:
+#        msg: "Tier 2 {{ groups['tier2'][0] }}"
+#      with_items: "{{ groups['tier2'] }}"
+
+- name: Get common facts
+  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
   connection: ssh
   become: true
   tasks:
+    - set_fact:
+        zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
+        controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
+        pravegaVersion: "0.5.1"
+        zookeeperVersion: "3.5.4-beta"
+        bookkeeperVersion: "4.7.3"
+        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    - debug:
+        msg: "zookeeperServers: {{ zookeeperServers }}"
+
+- name: Common installation
+  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  connection: ssh
+  become: true
+  tasks:
+    - name: Set performance profile
+      command: tuned-adm profile latency-performance
+    - name: Install RPM packages
+      yum: pkg={{ item }} state=latest
+      with_items:
+        - chrony
+        - java
+        - nano
+        - nc
+        - nfs-utils
+        - screen
+        - sysstat
+        - vim
+        - wget
+    - name: Change locale to en_US.utf-8
+      shell: |
+        echo 'LANG=en_US.utf-8
+              LC_ALL=en_US.utf-8' > /etc/environment
+
+- name: ZooKeeper setup
+  hosts: zookeeper
+  tags: ["zookeeper"]
+  connection: ssh
+  become: true
+  tasks:
+    - file: path=/opt/zookeeper state=absent
+    - file: path=/opt/zookeeper state=directory
+    - name: Download ZooKeeper binary package
+      unarchive:
+        src: "http://archive.apache.org/dist/zookeeper/zookeeper-{{ zookeeperVersion }}/zookeeper-{{ zookeeperVersion }}.tar.gz"
+        remote_src: yes
+        dest: /opt/zookeeper
+        extra_opts: ["--strip-components=1"]
+    - set_fact:
+        zid: "{{ groups['zookeeper'].index(inventory_hostname) }}"
+        max_heap_memory: "512m"
+        max_direct_memory: "512m"
+    - file:
+        path: "/opt/zookeeper/{{ item }}"
+        state: directory
+      with_items:
+        - data/zookeeper
+    - template:
+        src: "templates/zoo.cfg"
+        dest: "/opt/zookeeper/conf/zoo.cfg"
+    - template:
+        src: templates/myid
+        dest: "/opt/zookeeper/data/zookeeper/myid"
+    - template:
+        src: "templates/zookeeper.service"
+        dest: "/etc/systemd/system/zookeeper.service"
+    - systemd:
+        name: "zookeeper"
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
+    - name: Initialize ZooKeeper
+      shell: >
+        bin/zkServer-initialize.sh init --force --myid={{ zid }} && \
+        bin/zkCli.sh create /pravega && \
+        bin/zkCli.sh create /pravega/pravega-cluster && \
+        bin/zkCli.sh create /pravega/pravega-cluster/bookkeeper
+      args:
+        chdir: /opt/zookeeper
+      when: groups['zookeeper'][0] == inventory_hostname
+
+- name: Pravega common installation
+  hosts: ["controller", "segmentstore"]
+  tags: ["controller", "segmentstore"]
+  connection: ssh
+  become: true
+  tasks:
+    - set_fact:
+    - file: path=/opt/pravega state=absent
+    - file: path=/opt/pravega state=directory
+    - name: Download Pravega binary package
+      unarchive:
+        src: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
+        remote_src: yes
+        dest: /opt/pravega
+        extra_opts: ["--strip-components=1"]
+    - template:
+        src: "templates/config.properties"
+        dest: "/opt/pravega/conf/config.properties"
+    - template:
+        src: "templates/controller.config.properties"
+        dest: "/opt/pravega/conf/controller.config.properties"
+
+- name: Pravega Controller installation
+  hosts: controller
+  tags: ["controller"]
+  connection: ssh
+  become: true
+  tasks:
+    - template:
+        src: "templates/pravega-controller.service"
+        dest: "/etc/systemd/system/pravega-controller.service"
+    - systemd:
+        name: "pravega-controller"
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
+
+- name: Format and mount disks for BookKeeper hosts
+  hosts: bookkeeper
+  tags: ["bookkeeper"]
+  connection: ssh
+  become: true
+  tasks:
+    - systemd:
+        state: stopped
+        name: "bookkeeper"
+      ignore_errors: yes
+    - name: Unmount disks
+      mount:
+        path: "{{ item.path }}"
+        state: unmounted
+      with_items:
+        - { path: "/mnt/journal", src: "/dev/nvme0n1" }
+        - { path: "/mnt/storage", src: "/dev/nvme1n1" }
     - name: Format disks
       filesystem:
-         fstype: xfs
-         dev: '{{ item }}'
+        fstype: xfs
+        dev: '{{ item }}'
+        force: yes
       with_items:
         - '/dev/nvme0n1'
         - '/dev/nvme1n1'
@@ -40,123 +204,72 @@
         - { path: "/mnt/journal", src: "/dev/nvme0n1" }
         - { path: "/mnt/storage", src: "/dev/nvme1n1" }
 
-- name: Pulsar installation
-  hosts: all
-  connection: ssh
-  become: true
-  tasks:
-    - name: Set performance profile
-      command: tuned-adm profile latency-performance
-    - name: Install RPM packages
-      yum: pkg={{ item }} state=latest
-      with_items:
-          - wget
-          - java
-          - sysstat
-          - vim
-          - screen
-          - chrony
-    - set_fact:
-        zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
-        serviceUrl: "pulsar://{{ hostvars[groups['pulsar'][0]].private_ip }}:6650/"
-        httpUrl: "http://{{ hostvars[groups['pulsar'][0]].private_ip }}:8080/"
-        pulsarVersion: "2.4.1"
-    - file: path=/opt/pulsar state=absent
-    - file: path=/opt/pulsar state=directory
-    - name: Download Pulsar binary package
-      unarchive:
-        src: "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-{{ pulsarVersion }}-bin.tar.gz"
-        remote_src: yes
-        dest: /opt/pulsar
-        extra_opts: ["--strip-components=1"]
-    - set_fact:
-        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
-        max_heap_memory: "6g"
-        max_direct_memory: "6g"
-    - template:
-        src: "templates/pulsar_env.sh"
-        dest: "/opt/pulsar/conf/pulsar_env.sh"
-    - name: Change locale to en_US.utf-8
-      shell: |
-        echo 'LANG=en_US.utf-8
-              LC_ALL=en_US.utf-8' > /etc/environment
-
-- name: ZooKeeper setup
-  hosts: zookeeper
-  connection: ssh
-  become: true
-  tasks:
-    - set_fact:
-        zid: "{{ groups['zookeeper'].index(inventory_hostname) }}"
-        max_heap_memory: "512m"
-        max_direct_memory: "512m"
-    - file:
-        path: "/opt/pulsar/{{ item }}"
-        state: directory
-      with_items:
-        - data/zookeeper
-    - template:
-        src: "templates/pulsar_env.sh"
-        dest: "/opt/pulsar/conf/pulsar_env.sh"
-    - template:
-        src: "templates/zoo.cfg"
-        dest: "/opt/pulsar/conf/zookeeper.conf"
-    - template:
-        src: templates/myid
-        dest: "/opt/pulsar/data/zookeeper/myid"
-    - template:
-        src: "templates/zookeeper.service"
-        dest: "/etc/systemd/system/zookeeper.service"
-    - systemd:
-        state: restarted
-        daemon_reload: yes
-        name: "zookeeper"
-    - command: >
-        bin/pulsar initialize-cluster-metadata --cluster local
-        --zookeeper localhost:2181
-        --configuration-store localhost:2181
-        --web-service-url {{ httpUrl }}
-        --broker-service-url {{ serviceUrl }}
-      args:
-        chdir: /opt/pulsar
-      when: groups['zookeeper'][0] == inventory_hostname
-
 - name: BookKeeper setup
-  hosts: pulsar
+  hosts: bookkeeper
+  tags: ["bookkeeper"]
   connection: ssh
   become: true
   tasks:
+    - file: path=/opt/bookkeeper state=absent
+    - file: path=/opt/bookkeeper state=directory
+    - name: Download BookKeeper binary package
+      unarchive:
+        src: "https://archive.apache.org/dist/bookkeeper/bookkeeper-{{ bookkeeperVersion }}/bookkeeper-all-{{ bookkeeperVersion }}-bin.tar.gz"
+        remote_src: yes
+        dest: /opt/bookkeeper
+        extra_opts: ["--strip-components=1"]
     - template:
-        src: "templates/bookkeeper.conf"
-        dest: "/opt/pulsar/conf/bookkeeper.conf"
+        src: "templates/bk_server.conf"
+        dest: "/opt/bookkeeper/conf/bk_server.conf"
+    - template:
+        src: "templates/bkenv.sh"
+        dest: "/opt/bookkeeper/conf/bkenv.sh"
+    - name: Format BookKeeper metadata in Zookeeper
+      command: >
+        bin/bookkeeper shell metaformat -nonInteractive --force
+      args:
+        chdir: /opt/bookkeeper
+      when: groups['bookkeeper'][0] == inventory_hostname
+    - name: Format BookKeeper local filesystem data
+      command: >
+        bin/bookkeeper shell bookieformat -nonInteractive --force -deleteCookie
+      args:
+        chdir: /opt/bookkeeper
     - name: Install bookkeeper systemd service
       template:
         src: "templates/bookkeeper.service"
         dest: "/etc/systemd/system/bookkeeper.service"
     - systemd:
-        state: restarted
-        daemon_reload: yes
         name: "bookkeeper"
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
 
-- name: Pulsar configuration and systemd setup
-  hosts: pulsar
+- name: Pravega Segment Store installation
+  hosts: segmentstore
+  tags: ["segmentstore"]
   connection: ssh
   become: true
   tasks:
-    - name: Set up broker
-      template:
-        src: "templates/broker.conf"
-        dest: "/opt/pulsar/conf/broker.conf"
+    - name: Mount EFS volume for Pravega tier 2 storage
+      mount:
+        path: "/mnt/tier2"
+        src: "{{ groups['tier2'][0] }}:/"
+        fstype: nfs4
+        opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
+        state: mounted
     - template:
-        src: "templates/pulsar.service"
-        dest: "/etc/systemd/system/pulsar.service"
+        src: "templates/pravega-segmentstore.service"
+        dest: "/etc/systemd/system/pravega-segmentstore.service"
     - systemd:
-        state: restarted
+        name: "pravega-segmentstore"
         daemon_reload: yes
-        name: "pulsar"
+        state: restarted
+        enabled: yes
 
-- name: Chrony setup 
+- name: Chrony setup
   hosts: client
+  tags: ["client"]
   connection: ssh
   become: true
   tasks:
@@ -165,12 +278,14 @@
         src: "templates/chrony.conf"
         dest: "/etc/chrony.conf"
     - systemd:
-        state: restarted
-        daemon_reload: yes
         name: "chronyd"
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
 
-- name: Get Maven version
+- name: Get Benchmark version
   hosts: localhost
+  tags: ["client"]
   become: false
   tasks:
      - shell: >
@@ -180,41 +295,42 @@
        register: maven_version
      - set_fact:
          benchmark_version: "{{ maven_version.stdout }}"
+     - debug:
+         msg: "benchmark_version: {{ benchmark_version }}"
 
-- name: Pulsar benchmarking client setup
+- name: Benchmark client setup
   hosts: client
+  tags: ["client"]
   connection: ssh
   become: true
   tasks:
-    - name: Set up client config
-      template:
-        src: "templates/client.conf"
-        dest: "/opt/pulsar/conf/client.conf"
+    - set_fact:
+        benchmark_version: "{{ hostvars['localhost'].benchmark_version }}"
+    - debug:
+        msg: "benchmark_version: {{ benchmark_version }}"
     - file: path=/opt/benchmark state=absent
+    - file: path=/opt/benchmark state=directory
     - name: Copy benchmark code
       unarchive:
-        src: ../../package/target/openmessaging-benchmark-0.0.1-SNAPSHOT-bin.tar.gz
-        dest: /opt
-    - shell: mv /opt/openmessaging-benchmark-0.0.1-SNAPSHOT /opt/benchmark
-
+        src: ../../package/target/openmessaging-benchmark-{{ benchmark_version }}-bin.tar.gz
+        dest: /opt/benchmark
+        extra_opts: ["--strip-components=1"]
+#        mode: "u=rwX,g=rwX,o=rwX"
+    - file:
+        dest: /opt/benchmark
+        mode: u=rwX,g=rwX,o=rwX
+        recurse: yes
     - template:
         src: "templates/workers.yaml"
         dest: "/opt/benchmark/workers.yaml"
     - name: Get list of driver config files
-      raw: ls -1 /opt/benchmark/driver-pulsar/*.yaml
+      raw: ls -1 /opt/benchmark/driver-pravega/*.yaml
       register: drivers_list
-
     - name: Configure service URL
       lineinfile:
          dest: '{{ item }}'
-         regexp: '^  serviceUrl\: '
-         line: '  serviceUrl: {{ serviceUrl }}'
-      with_items: '{{ drivers_list.stdout_lines }}'
-    - name: Configure http URL
-      lineinfile:
-         dest: '{{ item }}'
-         regexp: '^  httpUrl: '
-         line: '  httpUrl: {{ httpUrl }}'
+         regexp: '^  controllerURI\: '
+         line: '  controllerURI: {{ controllerUrl }}'
       with_items: '{{ drivers_list.stdout_lines }}'
     - name: Configure memory
       lineinfile:
@@ -231,21 +347,7 @@
         src: "templates/benchmark-worker.service"
         dest: "/etc/systemd/system/benchmark-worker.service"
     - systemd:
-        state: restarted
-        daemon_reload: yes
         name: "benchmark-worker"
-
-
-- name: List host addresses
-  hosts: localhost
-  become: false
-  tasks:
-    - debug:
-        msg: "Zookeeper servers {{ item }}"
-      with_items: "{{ groups['zookeeper'] }}"
-    - debug:
-        msg: "Pulsar/BookKeeper servers {{ item }}"
-      with_items: "{{ groups['pulsar'] }}"
-    - debug:
-        msg: "Benchmark clients {{ item }}"
-      with_items: "{{ groups['client'] }}"
+        daemon_reload: yes
+        state: restarted
+        enabled: yes

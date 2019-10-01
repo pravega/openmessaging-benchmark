@@ -1,11 +1,11 @@
 [Unit]
-Description=Pulsar Broker
+Description=Pravega Segment Store
 After=network.target
 
 [Service]
-ExecStart=/opt/pulsar/bin/pulsar broker
-WorkingDirectory=/opt/pulsar
-RestartSec=1s
+ExecStart=/opt/pravega/bin/pravega-segmentstore
+WorkingDirectory=/opt/pravega
+RestartSec=15s
 Restart=on-failure
 Type=simple
 LimitNOFILE=300000

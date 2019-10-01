@@ -1,14 +1,15 @@
 [Unit]
-Description=OpenMessaging Benchmark Worker
+Description=Pravega Controller
 After=network.target
 
 [Service]
-ExecStart=/opt/benchmark/bin/benchmark-worker
-WorkingDirectory=/opt/benchmark
+ExecStart=/opt/pravega/bin/pravega-controller
+WorkingDirectory=/opt/pravega
 RestartSec=15s
 Restart=on-failure
 Type=simple
 LimitNOFILE=300000
+TimeoutStopSec=5
 
 [Install]
 WantedBy=multi-user.target

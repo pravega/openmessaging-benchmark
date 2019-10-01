@@ -1,17 +1,21 @@
-public_key_path = "~/.ssh/pulsar_aws.pub"
+public_key_path = "~/.ssh/pravega_aws.pub"
 region          = "us-west-2"
-ami             = "ami-9fa343e7" // RHEL-7.4
+ami             = "ami-9fa343e7" // RHEL-7.4 us-west-2
 
 instance_types = {
-  "pulsar"      = "i3.4xlarge"
-  "zookeeper"   = "t3.small"
-  "client"      = "c5.2xlarge"
-  "prometheus"  = "t3.small"
+  "controller"   = "m5.large"       //  2 cpu,   8 GiB,   78 MB/sec net
+  "segmentstore" = "m5.xlarge"      //  4 cpu,  16 GiB,  156 MB/sec net
+  "bookkeeper"   = "i3.4xlarge"     // 16 cpu, 122 GiB,  625 MB/sec net, 2 x 1,900 NVMe SSD
+  "zookeeper"    = "t3.small"       //  2 cpu,   8 GiB
+  "client"       = "c5.2xlarge"     //  8 cpu,  16 GiB,  277 MB/sec net
+  "prometheus"   = "t3.small"       //  2 cpu,   8 GiB
 }
 
 num_instances = {
-  "client"      = 4
-  "pulsar"      = 3
-  "zookeeper"   = 3
-  "prometheus"  = 1
+  "controller"   = 1
+  "segmentstore" = 1
+  "bookkeeper"   = 3
+  "zookeeper"    = 1
+  "client"       = 2
+  "prometheus"   = 1
 }
