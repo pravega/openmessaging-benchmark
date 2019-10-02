@@ -70,6 +70,9 @@
       when: groups['segmentstore'][0] == inventory_hostname
       args:
         warn: no
+    - name: Unmount tier 2
+      shell: "umount /mnt/tier2"
+      ignore_errors: yes
 
 - name: Get common facts
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
@@ -85,6 +88,7 @@
         zookeeperVersion: "3.5.4-beta"
         bookkeeperVersion: "4.7.3"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        pravegaContainerCount: 1
 
 - name: Common installation
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
@@ -302,13 +306,16 @@
         fstype: nfs4
         opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
         state: mounted
+#    - file: path=/tmp/tier2 state=absent
+#    - file: path=/tmp/tier2 state=directory
     - template:
         src: "templates/pravega-segmentstore.service"
         dest: "/etc/systemd/system/pravega-segmentstore.service"
     - systemd:
         name: "pravega-segmentstore"
         daemon_reload: yes
-        state: restarted
+#        state: restarted
+        state: stopped
         enabled: yes
 
 - name: Chrony setup
@@ -421,17 +428,17 @@
 #    - set_fact:
 #        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
 
-- name: Run Pravega Tester
-  hosts: prometheus
-  tags: ["pravega-tester"]
-  connection: ssh
-  become: true
-  tasks:
-    - shell: >
-        docker run --rm \
-        -e PRAVEGA_CONTROLLER_URI={{ controllerUrl }} \
-        -e PRAVEGA_SCOPE="examples" \
-        -e CREATE_SCOPE="true" \
-        -e pravega_client_auth_method= \
-        -e pravega_client_auth_loadDynamic= \
-        claudiofahey/pravega-tester:0.5.0
+#- name: Run Pravega Tester
+#  hosts: prometheus
+#  tags: ["pravega-tester"]
+#  connection: ssh
+#  become: true
+#  tasks:
+#    - shell: >
+#        docker run --rm \
+#        -e PRAVEGA_CONTROLLER_URI={{ controllerUrl }} \
+#        -e PRAVEGA_SCOPE="examples" \
+#        -e CREATE_SCOPE="true" \
+#        -e pravega_client_auth_method= \
+#        -e pravega_client_auth_loadDynamic= \
+#        claudiofahey/pravega-tester:0.5.0
