@@ -27,7 +27,7 @@
         pravegaVersion: "0.6.0-2361.f273314-SNAPSHOT"
         zookeeperVersion: "3.5.4-beta"
         bookkeeperVersion: "4.7.3"
-        pravegaContainersPerSegmentStore: 4
+        pravegaContainersPerSegmentStore: 8
         zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
         controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
