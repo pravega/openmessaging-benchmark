@@ -17,31 +17,27 @@
 # under the License.
 #
 
-#- name: List host addresses
-#  hosts: all
-#  become: false
-#  tasks:
-#    - debug:
-#        msg: "Zookeeper servers {{ item }}"
-#      with_items: "{{ groups['zookeeper'] }}"
-#    - debug:
-#        msg: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | join(',') }}"
-#      with_items: "{{ groups['zookeeper'] }}"
-#    - debug:
-#        msg: "Pulsar/BookKeeper servers {{ item }}"
-#      with_items: "{{ groups['pulsar'] }}"
-#    - debug:
-#        msg: "Benchmark clients {{ item }}"
-#      with_items: "{{ groups['client'] }}"
-
-#- name: Test
-#  hosts: segmentstore
-#  tags: test1
-#  become: false
-#  tasks:
-#    - debug:
-#        msg: "Tier 2 {{ groups['tier2'][0] }}"
-#      with_items: "{{ groups['tier2'] }}"
+- name: Get common facts
+  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["facts","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  connection: ssh
+  become: true
+  tasks:
+    - set_fact:
+        pravegaVersion: "0.6.0-2361.f273314-SNAPSHOT"
+        zookeeperVersion: "3.5.4-beta"
+        bookkeeperVersion: "4.7.3"
+        pravegaContainersPerSegmentStore: 4
+        zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
+        controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
+        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        segmentStoreCount: "{{ groups['segmentstore'] | length }}"
+    - set_fact:
+#        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
+#        pravegaSrcRemote: yes
+        pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
+        pravegaSrcRemote: no
+        pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
 
 - name: Uninstall
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
@@ -73,25 +69,6 @@
     - name: Unmount tier 2
       shell: "umount /mnt/tier2"
       ignore_errors: yes
-
-- name: Get common facts
-  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
-  tags: ["facts","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
-  connection: ssh
-  become: true
-  tasks:
-    - set_fact:
-        zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
-        controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
-#        pravegaVersion: "0.6.0-2361.f273314-SNAPSHOT"
-        pravegaVersion: "0.5.1"
-        zookeeperVersion: "3.5.4-beta"
-        bookkeeperVersion: "4.7.3"
-        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
-        pravegaContainersPerSegmentStore: 4
-        segmentStoreCount: "{{ groups['segmentstore'] | length }}"
-    - set_fact:
-        pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
 
 - name: Common installation
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
@@ -191,10 +168,8 @@
     - file: path=/opt/pravega state=directory
     - name: Download Pravega binary package
       unarchive:
-        src: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
-        remote_src: yes
-#        src: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
-#        remote_src: no
+        src: "{{ pravegaSrc }}"
+        remote_src: "{{ pravegaSrcRemote }}"
         dest: /opt/pravega
         extra_opts: ["--strip-components=1"]
     - template:
