@@ -314,8 +314,7 @@
     - systemd:
         name: "pravega-segmentstore"
         daemon_reload: yes
-#        state: restarted
-        state: stopped
+        state: restarted
         enabled: yes
 
 - name: Chrony setup
@@ -428,17 +427,19 @@
 #    - set_fact:
 #        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
 
-#- name: Run Pravega Tester
-#  hosts: prometheus
-#  tags: ["pravega-tester"]
-#  connection: ssh
-#  become: true
-#  tasks:
-#    - shell: >
-#        docker run --rm \
-#        -e PRAVEGA_CONTROLLER_URI={{ controllerUrl }} \
-#        -e PRAVEGA_SCOPE="examples" \
-#        -e CREATE_SCOPE="true" \
-#        -e pravega_client_auth_method= \
-#        -e pravega_client_auth_loadDynamic= \
-#        claudiofahey/pravega-tester:0.5.0
+- name: Run Pravega Tester
+  hosts: prometheus
+  tags: ["pravega-tester"]
+  connection: ssh
+  become: true
+  tasks:
+    - shell: >
+        docker run --rm \
+        -e PRAVEGA_CONTROLLER_URI={{ controllerUrl }} \
+        -e PRAVEGA_SCOPE="examples" \
+        -e CREATE_SCOPE="true" \
+        -e DELETE_STREAM="false" \
+        -e NUM_EVENTS="500" \
+        -e pravega_client_auth_method= \
+        -e pravega_client_auth_loadDynamic= \
+        claudiofahey/pravega-tester:0.5.1
