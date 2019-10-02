@@ -1,5 +1,6 @@
 # Pravega Driver for OpenMessaging Benchmark
 
+# Run in AWS (without Kubernetes)
 
 ## Build Pravega
 
@@ -7,10 +8,31 @@
 cd
 git clone https://github.com/pravega/pravega
 cd pravega
-git checkout aa11841
-./gradlew install
+git checkout f273314
+./gradlew install distTar
 ```
 
+## Build Benchmark
+
+```
+mvn install
+```
+
+## Deployment to AWS
+
+Install Terraform 0.11.14.
+
+Install Ansible.
+
+```
+ssh-keygen -f ~/.ssh/pravega_aws
+cd driver-pravega/deploy
+terraform init
+terraform apply
+ansible-playbook --user ec2-user --inventory `which terraform-inventory` deploy.yaml
+```
+
+# Run in Kubernetes
 
 ## Build Docker container
 
@@ -29,20 +51,7 @@ kubectl run -n examples --rm -it --image claudiofahey/openmessaging-benchmark:la
 ./deploy-k8s-components.sh
 ```
 
-# Deployment to AWS
-
-```
-# Install Terraform 0.11.14
-# Install Ansible
-mvn install
-ssh-keygen -f ~/.ssh/pravega_aws
-cd driver-pravega/deploy
-terraform_0.11.14 init
-terraform_0.11.14 apply
-ansible-playbook --user ec2-user --inventory `which terraform-inventory` deploy.yaml
-```
-
-## Run Jupyter for data analysis
+# Run Jupyter for data analysis
 
 ```
 cd ..
@@ -61,4 +70,3 @@ cd ../p3_test_driver
 tests/testgen_pravega.py | ./p3_test_driver.py -t - -c config/pravega_k8s.config.yaml
 tests/testgen_pravega_ssh.py | ./p3_test_driver.py -t - -c config/pravega_ssh.config.yaml
 ```
-

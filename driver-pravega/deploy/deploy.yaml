@@ -80,7 +80,8 @@
     - set_fact:
         zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
         controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
-        pravegaVersion: "0.6.0-2373.aa11841-SNAPSHOT"
+#        pravegaVersion: "0.6.0-2361.f273314-SNAPSHOT"
+        pravegaVersion: "0.5.1"
         zookeeperVersion: "3.5.4-beta"
         bookkeeperVersion: "4.7.3"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
@@ -183,10 +184,10 @@
     - file: path=/opt/pravega state=directory
     - name: Download Pravega binary package
       unarchive:
-#        src: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
-#        remote_src: yes
-        src: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
-        remote_src: no
+        src: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
+        remote_src: yes
+#        src: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
+#        remote_src: no
         dest: /opt/pravega
         extra_opts: ["--strip-components=1"]
     - template:
