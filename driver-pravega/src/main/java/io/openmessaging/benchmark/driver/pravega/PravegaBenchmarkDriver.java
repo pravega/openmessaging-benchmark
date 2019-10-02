@@ -87,7 +87,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public String getTopicNamePrefix() {
-        return "pravega-benchmark";
+        return "openmessaging-benchmark";
     }
 
     @Override
