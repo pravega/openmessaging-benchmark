@@ -11,7 +11,7 @@ tarball = 'package/target/openmessaging-benchmark-0.0.1-SNAPSHOT-bin.tar.gz'
 build = False
 
 for repeat in range(1):
-    for producerWorkers in [1]:
+    for producerWorkers in [2]:
         numWorkers = 0 if localWorker else producerWorkers*2
         for testDurationMinutes in [5]:
             for messageSize in [10000]:
@@ -23,7 +23,7 @@ for repeat in range(1):
                     #eps = [3e1, 1e2, 3e2, 1e3, 3e3, 1e4, 3e4, 5e4, 1e5, 3e5, 1e6, 3e6, -1]
                     eps = [-1]
                     #ppw = [16,8,4,2,1]
-                    ppw = [1]
+                    ppw = [2]
                 elif messageSize <= 10000:
                     #eps += [3e1, 1e2, 3e2, 1e3, 3e3, 1e4, 3e4, -1]
                     eps = [-1]
@@ -34,7 +34,7 @@ for repeat in range(1):
                 eps += [x * 1e6 / messageSize for x in MBps]
                 for producerRateEventsPerSec in eps:
                     for topics in [1]:
-                        for partitionsPerTopic in [1]:
+                        for partitionsPerTopic in [16]:
                             for producersPerWorker in ppw:
                                 producersPerTopic = int(producersPerWorker * producerWorkers)
                                 for consumerBacklogSizeGB in [0]:

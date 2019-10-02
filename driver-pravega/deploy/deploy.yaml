@@ -76,7 +76,7 @@
 
 - name: Get common facts
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
-  tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["facts","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
   connection: ssh
   become: true
   tasks:
@@ -88,7 +88,10 @@
         zookeeperVersion: "3.5.4-beta"
         bookkeeperVersion: "4.7.3"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
-        pravegaContainerCount: 1
+        pravegaContainersPerSegmentStore: 4
+        segmentStoreCount: "{{ groups['segmentstore'] | length }}"
+    - set_fact:
+        pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
 
 - name: Common installation
   hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
