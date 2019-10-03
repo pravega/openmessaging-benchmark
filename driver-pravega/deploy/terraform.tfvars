@@ -3,11 +3,11 @@ region          = "us-west-2"
 ami             = "ami-9fa343e7" // RHEL-7.4 us-west-2
 
 instance_types = {
-  "controller"   = "m5.large"       //  2 cpu,   8 GiB,   78 MB/sec net
-  "segmentstore" = "m5.xlarge"      //  4 cpu,  16 GiB,  156 MB/sec net
-  "bookkeeper"   = "i3.4xlarge"     // 16 cpu, 122 GiB,  625 MB/sec net, 2 x 1,900 NVMe SSD
+  "controller"   = "m5.large"       //  2 cpu,   8 GiB,   78-1250 MB/sec net
+  "segmentstore" = "c5.2xlarge"     //  8 cpu,  16 GiB,  277-1250 MB/sec net
+  "bookkeeper"   = "i3.4xlarge"     // 16 cpu, 122 GiB,  625-1250 MB/sec net, 2 x 1,900 NVMe SSD
   "zookeeper"    = "t3.small"       //  2 cpu,   8 GiB
-  "client"       = "c5.2xlarge"     //  8 cpu,  16 GiB,  277 MB/sec net
+  "client"       = "c5.2xlarge"     //  8 cpu,  16 GiB,  277-1250 MB/sec net
   "prometheus"   = "t3.small"       //  2 cpu,   8 GiB
 }
 

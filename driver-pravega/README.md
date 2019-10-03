@@ -2,6 +2,8 @@
 
 # Run in AWS (without Kubernetes)
 
+For a more detailed guide, see http://openmessaging.cloud/docs/benchmarks/pulsar/.
+
 ## Build Pravega
 
 ```
@@ -33,6 +35,14 @@ terraform apply
 ansible-playbook --user ec2-user --inventory `which terraform-inventory` deploy.yaml
 ```
 
+## Troubleshooting
+
+```
+terraform-inventory -inventory
+ssh -i ~/.ssh/pravega_aws ec2-user@`terraform output segmentstore_0_ssh_host`
+journalctl -u pravega-segmentstore
+```
+
 # Run in Kubernetes
 
 ## Build Docker container
@@ -52,16 +62,6 @@ kubectl run -n examples --rm -it --image claudiofahey/openmessaging-benchmark:la
 ./deploy-k8s-components.sh
 ```
 
-# Run Jupyter for data analysis
-
-```
-cd ..
-docker run -d -p 8888:8888 -e JUPYTER_ENABLE_LAB=yes -v "$PWD":/home/jovyan/work --name jupyter jupyter/scipy-notebook:1386e2046833
-docker logs jupyter
-```
-
-Open Notebook results-analyzer/results-analyzer-1.ipynb and run all cells.
-
 # P3 Test Driver
 
 P3 Test Driver can be used to run multiple tests automatically.
@@ -71,3 +71,13 @@ cd ../p3_test_driver
 tests/testgen_pravega.py | ./p3_test_driver.py -t - -c config/pravega_k8s.config.yaml
 tests/testgen_pravega_ssh.py | ./p3_test_driver.py -t - -c config/pravega_ssh.config.yaml
 ```
+
+# Run Jupyter for data analysis of results from P3 Test Driver
+
+```
+cd ..
+docker run -d -p 8888:8888 -e JUPYTER_ENABLE_LAB=yes -v "$PWD":/home/jovyan/work --name jupyter jupyter/scipy-notebook:1386e2046833
+docker logs jupyter
+```
+
+Open Notebook results-analyzer/results-analyzer-2.ipynb and run all cells.
