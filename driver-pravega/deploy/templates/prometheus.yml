@@ -35,32 +35,53 @@ rule_files:
   # - "first_rules.yml"
   # - "second_rules.yml"
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: 'pulsar'
+  - job_name: 'pravega'
 
     # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
 
     static_configs:
+
       - targets:
-{% for worker in groups['pulsar'] %}
-          - {{ hostvars[worker].private_ip }}:8080
+{% for worker in groups['controller'] %}
+          - {{ hostvars[worker].private_ip }}:9100
 {% endfor %}
         labels:
-          group: 'broker'
+          group: 'controller'
+
       - targets:
-{% for worker in groups['pulsar'] %}
-          - {{ hostvars[worker].private_ip }}:8000
+{% for worker in groups['segmentstore'] %}
+          - {{ hostvars[worker].private_ip }}:9100
 {% endfor %}
         labels:
-          group: 'bookie'
+          group: 'segmentstore'
+
+      - targets:
+{% for worker in groups['bookkeeper'] %}
+          - {{ hostvars[worker].private_ip }}:9100
+{% endfor %}
+        labels:
+          group: 'bookkeeper'
+
+      - targets:
+{% for worker in groups['zookeeper'] %}
+          - {{ hostvars[worker].private_ip }}:9100
+{% endfor %}
+        labels:
+          group: 'zookeeper'
+
       - targets:
 {% for worker in groups['client'] %}
-          - {{ hostvars[worker].private_ip }}:8081
+          - {{ hostvars[worker].private_ip }}:9100
 {% endfor %}
         labels:
           group: 'client'
 
+      - targets:
+{% for worker in groups['prometheus'] %}
+          - {{ hostvars[worker].private_ip }}:9100
+{% endfor %}
+        labels:
+          group: 'prometheus'

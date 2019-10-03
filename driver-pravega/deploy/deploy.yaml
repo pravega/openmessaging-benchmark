@@ -18,7 +18,7 @@
 #
 
 - name: Get common facts
-  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  hosts: ["!tier2"]
   tags: ["facts","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
   connection: ssh
   become: true
@@ -33,6 +33,7 @@
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         segmentStoreCount: "{{ groups['segmentstore'] | length }}"
     - set_fact:
+        # Change below to use a published release of Pravega or a local build.
 #        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
 #        pravegaSrcRemote: yes
         pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
@@ -40,7 +41,7 @@
         pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
 
 - name: Uninstall
-  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  hosts: ["!tier2"]
   tags: ["uninstall"]
   connection: ssh
   become: true
@@ -71,7 +72,7 @@
       ignore_errors: yes
 
 - name: Common installation
-  hosts: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  hosts: ["!tier2"]
   tags: ["nmon","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
   connection: ssh
   become: true
@@ -101,6 +102,69 @@
         dest: /tmp
     - command: cp /tmp/nmon_AMD64_ubuntu1804 /usr/local/bin/nmon
     - command: chmod a+x /usr/local/bin/nmon
+
+- name: Prometheus installation
+  hosts: prometheus
+  tags: ["prometheus"]
+  connection: ssh
+  become: true
+  tasks:
+    - name: Add Extras Repo
+      shell: yum-config-manager --enable rhui-REGION-rhel-server-extras
+    - name: Install RPM packages
+      yum: pkg={{ item }} state=latest
+      with_items:
+        - docker
+    - systemd:
+        state: started
+        name: "docker"
+        enabled: yes
+    - set_fact:
+        prometheusVersion: "2.2.1"
+    - file: path=/opt/prometheus state=absent
+    - file: path=/opt/prometheus state=directory
+    - name: Download Prometheus Binary Package
+      unarchive:
+        src: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheusVersion }}/prometheus-{{ prometheusVersion }}.linux-amd64.tar.gz"
+        remote_src: yes
+        dest: /opt/prometheus
+        extra_opts: ["--strip-components=1"]
+    - set_fact:
+        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    - file:
+        path: "/opt/prometheus/data"
+        state: directory
+    - template:
+        src: "templates/prometheus.service"
+        dest: "/etc/systemd/system/prometheus.service"
+    - template:
+        src: "templates/prometheus.yml"
+        dest: "/opt/prometheus/prometheus.yml"
+    - systemd:
+        name: "prometheus"
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
+
+- name: Pravega Dashboard installation
+  hosts: prometheus
+  tags: ["dashboard"]
+  connection: ssh
+  become: true
+  tasks:
+    - template:
+        src: "templates/pravega-dashboard.service"
+        dest: "/etc/systemd/system/pravega-dashboard.service"
+    - systemd:
+        name: "pravega-dashboard"
+        daemon_reload: yes
+        state: restarted
+
+- name: Prometheus Node Exporter
+  hosts: ["!tier2"]
+  tags: ["node-exporter"]
+  roles:
+    - cloudalchemy.node-exporter
 
 - name: ZooKeeper setup
   hosts: zookeeper
@@ -284,8 +348,6 @@
         fstype: nfs4
         opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
         state: mounted
-#    - file: path=/tmp/tier2 state=absent
-#    - file: path=/tmp/tier2 state=directory
     - template:
         src: "templates/pravega-segmentstore.service"
         dest: "/etc/systemd/system/pravega-segmentstore.service"
@@ -343,7 +405,6 @@
         src: ../../package/target/openmessaging-benchmark-{{ benchmark_version }}-bin.tar.gz
         dest: /opt/benchmark
         extra_opts: ["--strip-components=1"]
-#        mode: "u=rwX,g=rwX,o=rwX"
     - file:
         dest: /opt/benchmark
         mode: u=rwX,g=rwX,o=rwX
@@ -379,31 +440,6 @@
         daemon_reload: yes
         state: restarted
         enabled: yes
-
-- name: Prometheus installation
-  hosts: prometheus
-  tags: ["prometheus"]
-  connection: ssh
-  become: true
-  tasks:
-    - name: Add Extras Repo
-      shell: yum-config-manager --enable rhui-REGION-rhel-server-extras
-    - name: Install RPM packages
-      yum: pkg={{ item }} state=latest
-      with_items:
-        - docker
-#    - set_fact:
-#        prometheusVersion: "2.2.1"
-#    - file: path=/opt/prometheus state=absent
-#    - file: path=/opt/prometheus state=directory
-#    - name: Download Prometheus Binary Package
-#      unarchive:
-#        src: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheusVersion }}/prometheus-{{ prometheusVersion }}.linux-amd64.tar.gz"
-#        remote_src: yes
-#        dest: /opt/prometheus
-#        extra_opts: ["--strip-components=1"]
-#    - set_fact:
-#        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
 
 - name: Run Pravega Tester
   hosts: prometheus

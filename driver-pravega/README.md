@@ -25,6 +25,7 @@ Install Terraform 0.11.14.
 Install Ansible.
 
 ```
+ansible-galaxy install cloudalchemy.node-exporter
 ssh-keygen -f ~/.ssh/pravega_aws
 cd driver-pravega/deploy
 terraform init

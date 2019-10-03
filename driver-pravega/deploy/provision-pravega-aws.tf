@@ -87,14 +87,16 @@ resource "aws_security_group" "benchmark_security_group" {
     cidr_blocks = ["10.0.0.0/16"]
   }
 
-  # Prometheus/Dashboard access
-  # Below disabled because 9090 is also used by Pravega Controller.
-  #ingress {
-  #  from_port   = 9090
-  #  to_port     = 9090
-  #  protocol    = "tcp"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
+  # Prometheus access
+  # TODO: 9090 is also used by Pravega Controller. Need to filter below.
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Grafana dashboard access
   ingress {
     from_port   = 3000
     to_port     = 3000
