@@ -19,7 +19,7 @@
 
 - name: Get common facts
   hosts: ["!tier2"]
-  tags: ["facts","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["always"]
   connection: ssh
   become: true
   tasks:
@@ -32,6 +32,7 @@
         controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         segmentStoreCount: "{{ groups['segmentstore'] | length }}"
+        influxDBURI: "http://{{ hostvars[groups['prometheus'][0]].private_ip }}:8086"
     - set_fact:
         # Change below to use a published release of Pravega or a local build.
 #        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
@@ -73,7 +74,7 @@
 
 - name: Common installation
   hosts: ["!tier2"]
-  tags: ["nmon","controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
   connection: ssh
   become: true
   tasks:
@@ -89,12 +90,21 @@
         - nfs-utils
         - screen
         - sysstat
+        - unzip
         - vim
         - wget
+        - zip
     - name: Change locale to en_US.utf-8
       shell: |
         echo 'LANG=en_US.utf-8
               LC_ALL=en_US.utf-8' > /etc/environment
+
+- name: Install nmon
+  hosts: ["!tier2"]
+  tags: ["nmon"]
+  connection: ssh
+  become: true
+  tasks:
     - name: Download nmon
       unarchive:
         src: "http://sourceforge.net/projects/nmon/files/nmon16j.tar.gz"
@@ -145,6 +155,20 @@
         daemon_reload: yes
         state: restarted
         enabled: yes
+
+- name: InfluxDB installation
+  hosts: prometheus
+  tags: ["influxdb"]
+  connection: ssh
+  become: true
+  tasks:
+    - template:
+        src: "templates/influxdb.service"
+        dest: "/etc/systemd/system/influxdb.service"
+    - systemd:
+        name: "influxdb"
+        daemon_reload: yes
+        state: restarted
 
 - name: Pravega Dashboard installation
   hosts: prometheus
