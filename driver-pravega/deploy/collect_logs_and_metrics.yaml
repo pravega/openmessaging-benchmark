@@ -29,6 +29,7 @@
   hosts: ["!tier2"]
   tags: ["always"]
   become: false
+  gather_facts: no
   tasks:
     - set_fact:
         output_dir: "{{ hostvars['localhost'].output_dir }}"

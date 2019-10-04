@@ -28,6 +28,7 @@ _default_configs = {
         'undeploy': False,
         'build': False,
         'noop': False,
+        'terraform': False,
     },
 }
 
@@ -258,16 +259,47 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
     def deploy(self):
         pass
 
+    def inspect_environment(self):
+        rec = self.test_config
+        driver = rec['driver']
+
+        rec['git_commit'] = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, check=True).stdout.decode().rstrip()
+
+        if rec['terraform']:
+            driver_deploy_dir = '../driver-%s/deploy' % driver['name'].lower()
+            terraform_show_json = subprocess.run(
+                ['terraform', 'show', '-json'],
+                cwd=driver_deploy_dir,
+                check=True,
+                capture_output=True,
+            ).stdout.decode()
+            rec['terraform_show'] = json.load(StringIO(terraform_show_json))
+            logging.info('terraform_show=%s' % rec['terraform_show'])
+
+            if rec.get('ssh_host', '') == '':
+                rec['ssh_host'] = subprocess.run(
+                    ['terraform', 'output', 'client_ssh_host'],
+                    cwd=driver_deploy_dir,
+                    check=True,
+                    capture_output=True,
+                ).stdout.decode().rstrip()
+                logging.info('ssh_host=%s' % rec['ssh_host'])
+
+        if rec['ansible']:
+            with open('%s/vars.yaml' % driver_deploy_dir) as vars_file:
+                rec['ansible_vars'] = yaml.load(vars_file)
+            logging.info("ansible_vars=%s" % str(rec['ansible_vars']))
+
     def run_test(self):
         rec = self.test_config
-
         test_uuid = rec['test_uuid']
         driver = rec['driver']
         workload = rec['workload']
         numWorkers = rec['numWorkers']
         localWorker = rec['localWorker']
 
-        rec['git_commit'] = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, check=True).stdout.decode().rstrip()
+        self.inspect_environment()
+
         workload['name'] = test_uuid
         driver_file_name = '/tmp/driver-' +test_uuid + '.yaml'
         workload_file_name = '/tmp/workload-' + test_uuid + '.yaml'
@@ -275,16 +307,6 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
         workload['payloadFile'] = payload_file_name
 
         self.deploy()
-
-        if rec.get('ssh_host', '') == '':
-            driver_deploy_dir = '../driver-%s/deploy' % driver['name'].lower()
-            rec['ssh_host'] = subprocess.run(
-                ['terraform', 'output', 'client_ssh_host'],
-                cwd=driver_deploy_dir,
-                check=True,
-                capture_output=True,
-            ).stdout.decode().rstrip()
-            logging.info('ssh_host=%s' % rec['ssh_host'])
 
         if localWorker:
             # TODO: Doesn't work because workers.yaml exists.
