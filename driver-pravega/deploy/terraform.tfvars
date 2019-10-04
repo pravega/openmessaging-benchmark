@@ -6,9 +6,9 @@ instance_types = {
   "controller"   = "m5.large"       //  2 cpu,   8 GiB,   78-1250 MB/sec net
   "segmentstore" = "c5.2xlarge"     //  8 cpu,  16 GiB,  277-1250 MB/sec net
   "bookkeeper"   = "i3.4xlarge"     // 16 cpu, 122 GiB,  625-1250 MB/sec net, 2 x 1,900 NVMe SSD
-  "zookeeper"    = "t3.small"       //  2 cpu,   8 GiB
+  "zookeeper"    = "t3.small"       //  2 cpu,   2 GiB
   "client"       = "c5.2xlarge"     //  8 cpu,  16 GiB,  277-1250 MB/sec net
-  "metrics"      = "t3.small"       //  2 cpu,   8 GiB
+  "metrics"      = "t3.large"       //  2 cpu,   8 GiB
 }
 
 num_instances = {
