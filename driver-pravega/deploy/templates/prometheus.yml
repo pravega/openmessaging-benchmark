@@ -44,6 +44,10 @@ scrape_configs:
 
     static_configs:
 
+#
+# Node Exporter
+#
+
       - targets:
 {% for worker in groups['controller'] %}
           - {{ hostvars[worker].private_ip }}:9100
@@ -85,3 +89,14 @@ scrape_configs:
 {% endfor %}
         labels:
           group: 'prometheus'
+
+#
+# BookKeeper
+#
+
+      - targets:
+{% for worker in groups['bookkeeper'] %}
+          - {{ hostvars[worker].private_ip }}:8000
+{% endfor %}
+        labels:
+          group: 'bookie'
