@@ -84,11 +84,11 @@ scrape_configs:
           group: 'client'
 
       - targets:
-{% for worker in groups['prometheus'] %}
+{% for worker in groups['metrics'] %}
           - {{ hostvars[worker].private_ip }}:9100
 {% endfor %}
         labels:
-          group: 'prometheus'
+          group: 'metrics'
 
 #
 # BookKeeper

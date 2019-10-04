@@ -8,7 +8,7 @@ instance_types = {
   "bookkeeper"   = "i3.4xlarge"     // 16 cpu, 122 GiB,  625-1250 MB/sec net, 2 x 1,900 NVMe SSD
   "zookeeper"    = "t3.small"       //  2 cpu,   8 GiB
   "client"       = "c5.2xlarge"     //  8 cpu,  16 GiB,  277-1250 MB/sec net
-  "prometheus"   = "t3.small"       //  2 cpu,   8 GiB
+  "metrics"      = "t3.small"       //  2 cpu,   8 GiB
 }
 
 num_instances = {
@@ -17,5 +17,5 @@ num_instances = {
   "bookkeeper"   = 3
   "zookeeper"    = 3
   "client"       = 4
-  "prometheus"   = 1
+  "metrics"      = 1
 }

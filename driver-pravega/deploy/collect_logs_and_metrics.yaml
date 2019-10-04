@@ -114,7 +114,7 @@
         flat: yes
 
 - name: Download Prometheus Metrics
-  hosts: ["prometheus"]
+  hosts: ["metrics"]
   tags: ["prometheus"]
   connection: ssh
   become: true
@@ -134,7 +134,7 @@
         state: started
 
 - name: Download InfluxDB Metrics
-  hosts: ["prometheus"]
+  hosts: ["metrics"]
   tags: ["influxdb"]
   connection: ssh
   become: true
@@ -146,7 +146,7 @@
         docker cp systemd_influxdb:/tmp/influxdb.tgz /tmp/influxdb.tgz
     - name: Download InfluxDB database
       fetch:
-        src: "influxdb.tgz"
+        src: "/tmp/influxdb.tgz"
         dest: "{{ output_dir }}/influxdb.tgz"
         flat: yes
 

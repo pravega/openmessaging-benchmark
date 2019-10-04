@@ -32,7 +32,7 @@
         controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         segmentStoreCount: "{{ groups['segmentstore'] | length }}"
-        influxDBURI: "http://{{ hostvars[groups['prometheus'][0]].private_ip }}:8086"
+        influxDBURI: "http://{{ hostvars[groups['metrics'][0]].private_ip }}:8086"
     - set_fact:
         # Change below to use a published release of Pravega or a local build.
 #        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
@@ -74,7 +74,7 @@
 
 - name: Common installation
   hosts: ["!tier2"]
-  tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "prometheus"]
+  tags: ["controller", "segmentstore", "bookkeeper", "zookeeper", "client", "metrics"]
   connection: ssh
   become: true
   tasks:
@@ -113,9 +113,9 @@
     - command: cp /tmp/nmon_AMD64_ubuntu1804 /usr/local/bin/nmon
     - command: chmod a+x /usr/local/bin/nmon
 
-- name: Prometheus installation
-  hosts: prometheus
-  tags: ["prometheus"]
+- name: Metrics installation
+  hosts: ["metrics"]
+  tags: ["metrics"]
   connection: ssh
   become: true
   tasks:
@@ -129,6 +129,13 @@
         state: started
         name: "docker"
         enabled: yes
+
+- name: Prometheus installation
+  hosts: ["metrics"]
+  tags: ["prometheus"]
+  connection: ssh
+  become: true
+  tasks:
     - set_fact:
         prometheusVersion: "2.2.1"
     - file: path=/opt/prometheus state=absent
@@ -139,8 +146,6 @@
         remote_src: yes
         dest: /opt/prometheus
         extra_opts: ["--strip-components=1"]
-    - set_fact:
-        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
     - file:
         path: "/opt/prometheus/data"
         state: directory
@@ -157,7 +162,7 @@
         enabled: yes
 
 - name: InfluxDB installation
-  hosts: prometheus
+  hosts: ["metrics"]
   tags: ["influxdb"]
   connection: ssh
   become: true
@@ -171,7 +176,7 @@
         state: restarted
 
 - name: Pravega Dashboard installation
-  hosts: prometheus
+  hosts: ["metrics"]
   tags: ["dashboard"]
   connection: ssh
   become: true
@@ -466,7 +471,7 @@
         enabled: yes
 
 - name: Run Pravega Tester
-  hosts: prometheus
+  hosts: ["metrics"]
   tags: ["pravega-tester"]
   connection: ssh
   become: true

@@ -187,16 +187,16 @@ resource "aws_instance" "client" {
   }
 }
 
-resource "aws_instance" "prometheus" {
+resource "aws_instance" "metrics" {
   ami                    = "${var.ami}"
-  instance_type          = "${var.instance_types["prometheus"]}"
+  instance_type          = "${var.instance_types["metrics"]}"
   key_name               = "${aws_key_pair.auth.id}"
   subnet_id              = "${aws_subnet.benchmark_subnet.id}"
   vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
-  count                  = "${var.num_instances["prometheus"]}"
+  count                  = "${var.num_instances["metrics"]}"
 
   tags {
-    Name = "prometheus-${count.index}"
+    Name = "metrics-${count.index}"
   }
 }
 
@@ -218,8 +218,8 @@ output "client_ssh_host" {
   value = "${aws_instance.client.0.public_ip}"
 }
 
-output "prometheus_host" {
-  value = "${aws_instance.prometheus.0.public_ip}"
+output "metrics_host" {
+  value = "${aws_instance.metrics.0.public_ip}"
 }
 
 output "controller_0_ssh_host" {
