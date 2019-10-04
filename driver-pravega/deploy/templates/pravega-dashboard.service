@@ -12,6 +12,7 @@ ExecStartPre=/usr/bin/docker pull grafana/grafana:latest
 
 ExecStart=\
 /usr/bin/docker run --restart=always --name=systemd_pravega_dashboard -p3000:3000 \
+--network=host \
 -e "GF_SECURITY_ADMIN_PASSWORD=pravega" \
 grafana/grafana:latest
 
