@@ -1,0 +1,21 @@
+version: '2'
+
+services:
+  influxdb:
+    image: influxdb:1.7.8-alpine
+    ports:
+      - "8086:8086"
+    volumes:
+      - "${INFLUXDB_BACKUP_DIR}:/tmp/backup"
+
+  prometheus:
+    image: prom/prometheus:v2.2.1
+    volumes:
+      - "${PROMETHEUS_DATA_DIR}:/prometheus"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    links:
+      - prometheus

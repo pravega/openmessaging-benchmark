@@ -29,11 +29,43 @@ Install Ansible.
 ```
 ansible-galaxy install cloudalchemy.node-exporter
 ssh-keygen -f ~/.ssh/pravega_aws
-cd driver-pravega/deploy
+cd deploy
 terraform init
 terraform apply
 ansible-playbook --user ec2-user --inventory `which terraform-inventory` deploy.yaml
 ```
+
+## Collecting Logs and Metrics
+
+```
+cd deploy
+ansible-playbook --user ec2-user --inventory `which terraform-inventory` collect_logs_and_metrics.yaml.yaml
+```
+
+## Viewing Previously Collected Metrics
+
+This will load local instances of InfluxDB, Prometheus, and Grafana with previously
+collected metrics.
+
+```
+cd deploy
+open_saved_metrics/open_saved_metrics.sh ../../data/pravega_logs/pravega_logs_20191004T034401
+```
+
+Open Grafana at http://localhost:3000.
+Login using user name "admin" and any password.
+
+Configure Grafana with the following data sources:
+
+  - Prometheus
+    - Name: Prometheus
+    - HTTP URL: http://prometheus:9090
+  - InfluxDB
+    - Name: pravega-influxdb
+    - HTTP URL: http://influxdb:8086
+    - InfluxDB Details Database: pravega
+
+Load dashboards from [deploy/templates/dashboards](deploy/templates/dashboards).
 
 ## Troubleshooting
 
