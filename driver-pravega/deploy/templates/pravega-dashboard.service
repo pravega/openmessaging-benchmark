@@ -2,9 +2,7 @@
 Description=Pravega Dashboard
 After=docker.service
 Requires=docker.service
-After=prometheus.service
-Requires=prometheus.service
- 
+
 [Service]
 ExecStartPre=/usr/bin/docker pull grafana/grafana:latest
 
