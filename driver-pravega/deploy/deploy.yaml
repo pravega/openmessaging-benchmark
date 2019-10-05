@@ -102,19 +102,19 @@
         echo 'LANG=en_US.utf-8
               LC_ALL=en_US.utf-8' > /etc/environment
 
-- name: Install nmon
-  hosts: ["!tier2"]
-  tags: ["nmon"]
-  connection: ssh
-  become: true
-  tasks:
-    - name: Download nmon
-      unarchive:
-        src: "http://sourceforge.net/projects/nmon/files/nmon16j.tar.gz"
-        remote_src: yes
-        dest: /tmp
-    - command: cp /tmp/nmon_AMD64_ubuntu1804 /usr/local/bin/nmon
-    - command: chmod a+x /usr/local/bin/nmon
+#- name: Install nmon
+#  hosts: ["!tier2"]
+#  tags: ["nmon"]
+#  connection: ssh
+#  become: true
+#  tasks:
+#    - name: Download nmon
+#      unarchive:
+#        src: "http://sourceforge.net/projects/nmon/files/nmon16j.tar.gz"
+#        remote_src: yes
+#        dest: /tmp
+#    - command: cp /tmp/nmon_AMD64_ubuntu1804 /usr/local/bin/nmon
+#    - command: chmod a+x /usr/local/bin/nmon
 
 - name: Metrics installation
   hosts: ["metrics"]

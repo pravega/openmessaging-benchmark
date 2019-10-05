@@ -13,7 +13,7 @@ using the following steps.
 pushd ../..
 git clone https://github.com/pravega/pravega
 cd pravega
-git checkout f273314
+git checkout 23b7340
 ./gradlew install distTar
 popd
 ```
@@ -21,6 +21,8 @@ popd
 This will build the file ../../pravega/build/distributions/pravega-0.6.0-2361.f273314-SNAPSHOT.tgz.
 
 If needed, change the variable pravegaVersion in deploy.yaml to match the version built.
+
+If needed, change pom.xml to match the version built.
 
 ## Build Benchmark
 
@@ -72,6 +74,7 @@ Load dashboards from [deploy/templates/dashboards](deploy/templates/dashboards).
 
 ```
 ssh -i ~/.ssh/pravega_aws ec2-user@`terraform output client_ssh_host`
+cd /opt/benchmark
 bin/benchmark -d driver-pravega/pravega.yaml workloads/1-topic-16-partitions-1kb.yaml
 ```
 
