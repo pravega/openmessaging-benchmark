@@ -7,11 +7,13 @@ Requires=docker.service
 ExecStartPre=/usr/bin/docker pull claudiofahey/pravega-influxdb:02618a3
 
 ExecStart=\
-/usr/bin/docker run --restart=always --name=systemd_influxdb -p 8086:8086 \
-claudiofahey/pravega-influxdb:02618a3
+/bin/bash -c "\
+docker start --attach systemd_influxdb || \
+docker run --restart=always --name=systemd_influxdb -p 8086:8086 \
+claudiofahey/pravega-influxdb:02618a3 \
+"
 
 ExecStop=/usr/bin/docker stop systemd_influxdb
-ExecStopPost=/usr/bin/docker rm -f systemd_influxdb
 ExecReload=/usr/bin/docker restart systemd_influxdb
  
 [Install]
