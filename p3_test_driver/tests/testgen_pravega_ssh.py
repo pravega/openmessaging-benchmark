@@ -66,7 +66,6 @@ for repeat in range(1):
                                                 t = dict(
                                                     test='openmessaging-benchmark',
                                                     max_test_attempts=1,
-                                                    result_filename='data/results/json/%(test)s_%(test_uuid)s.json',
                                                     driver=driver,
                                                     workload=workload,
                                                     numWorkers=numWorkers,
