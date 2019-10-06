@@ -85,9 +85,13 @@ def get_varying_column_names(df, exclude_cols=[], ignore_nan=False):
             significant_values = df[col]
             if ignore_nan:
                 significant_values = significant_values[~significant_values.isnull()]
-            value_counts = significant_values.apply(make_hash).value_counts()
-            if len(value_counts) > 1:
-                take_cols.append(col)
+            try:
+                value_counts = significant_values.apply(make_hash).value_counts()
+                if len(value_counts) > 1:
+                    take_cols.append(col)
+            except:
+                # If an error occurs, ignore the column.
+                pass
     return take_cols
 
 def take_varying_columns(df, exclude_cols=[], ignore_nan=False):

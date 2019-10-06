@@ -1,6 +1,6 @@
-status_html: ../data/p3_test_driver/data/status/pravega.html
-result_filename: ../data/results/json/%(test)s_%(test_uuid)s.json
-test_driver_log_filename: ../data/p3_test_driver/data/logs/p3_test_driver.log
+status_html: ../data/p3_test_driver/status/pravega.html
+result_filename: ../data/p3_test_driver/results/%(test)s_%(test_uuid)s.json
+test_driver_log_filename: ../data/p3_test_driver/logs/p3_test_driver.log
 ssh_user: ec2-user
 ssh_identity_file: /home/faheyc/.ssh/pravega_aws
 kubernetes: false
