@@ -39,6 +39,10 @@ Install [Ansible](http://docs.ansible.com/ansible/latest/intro_installation.html
 Install Ansible modules.
 ```
 ansible-galaxy install cloudalchemy.node-exporter
+```
+
+Create EC2 key pair.
+```
 ssh-keygen -f ~/.ssh/pravega_aws
 ```
 
