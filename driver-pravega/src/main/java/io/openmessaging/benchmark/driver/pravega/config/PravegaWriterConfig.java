@@ -19,4 +19,5 @@
 package io.openmessaging.benchmark.driver.pravega.config;
 
 public class PravegaWriterConfig {
+    public boolean enableConnectionPooling = true;
 }

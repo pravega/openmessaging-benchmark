@@ -26,4 +26,7 @@ client:
   controllerURI: tcp://localhost:9090
   scopeName: examples
 
-#includeTimestampInEvent: False
+writer:
+  enableConnectionPooling: True
+
+includeTimestampInEvent: False

@@ -106,7 +106,11 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
         topic = cleanName(topic);
-        BenchmarkProducer producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent);
+        BenchmarkProducer producer = new PravegaBenchmarkProducer(
+                topic,
+                clientFactory,
+                config.includeTimestampInEvent,
+                config.writer.enableConnectionPooling);
         return CompletableFuture.completedFuture(producer);
     }
 

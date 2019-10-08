@@ -37,12 +37,15 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private final boolean includeTimestampInEvent;
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
-                                    boolean includeTimestampInEvent) {
+                                    boolean includeTimestampInEvent,
+                                    boolean enableConnectionPooling) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
         writer = clientFactory.createEventWriter(
                 streamName,
                 new ByteBufferSerializer(),
-                EventWriterConfig.builder().build());
+                EventWriterConfig.builder()
+                        .enableConnectionPooling(enableConnectionPooling)
+                        .build());
         this.includeTimestampInEvent = includeTimestampInEvent;
     }
 
