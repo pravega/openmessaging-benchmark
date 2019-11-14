@@ -1,0 +1,4 @@
+status_html: data/status/pulsar.html
+test_driver_log_filename: data/logs/p3_test_driver.log
+ssh_user: ec2-user
+ssh_identity_file: /home/faheyc/.ssh/pulsar_aws

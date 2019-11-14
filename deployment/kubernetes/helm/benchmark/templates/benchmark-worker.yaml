@@ -38,10 +38,42 @@ spec:
         app: {{ .Release.Name }}
         component: worker
     spec:
+      serviceAccount: {{ .Release.Namespace }}-pravega
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            # Do not place on same node as Pravega pods.
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - pravega-cluster
+              topologyKey: kubernetes.io/hostname
+              namespaces:
+                - nautilus-pravega
+            # Do not place on same node as other workers.
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - {{ .Release.Name }}
+                  - key: component
+                    operator: In
+                    values:
+                      - worker
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: {{ .Release.Name }}-worker
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           image: {{ .Values.image }}
+          resources:
+            limits:
+              memory: "10Gi"
+            requests:
+              cpu: "1"
+              memory: "6Gi"
           command: ["sh", "-c"]
           args:
             - >
@@ -49,8 +81,12 @@ spec:
           ports:
             - containerPort: 8080
             - containerPort: 8081
+          env:
+            - name: pravega_client_auth_method
+              value: Bearer
+            - name: pravega_client_auth_loadDynamic
+              value: "true"
 ---
-
 apiVersion: v1
 kind: Service
 metadata:

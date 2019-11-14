@@ -1,0 +1,6 @@
+---
+pravegaVersion: "0.6.0-2386.23b7340-SNAPSHOT"
+zookeeperVersion: "3.5.4-beta"
+bookkeeperVersion: "4.7.3"
+prometheusVersion: "2.2.1"
+pravegaContainersPerSegmentStore: 8
