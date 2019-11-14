@@ -13,7 +13,12 @@ def add_test():
             'controllerURI': 'tcp://localhost:9090',
             'scopeName': 'examples',
         },
+        'writer': {
+            'enableConnectionPooling': False,
+        },
         'includeTimestampInEvent': includeTimestampInEvent,
+        'enableTransaction': False,
+        'eventPerTransaction': 1,
     }
     workload = {
         'messageSize': messageSize,
