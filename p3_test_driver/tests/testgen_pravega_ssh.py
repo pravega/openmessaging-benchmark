@@ -15,10 +15,10 @@ def add_test():
         },
         'writer': {
             'enableConnectionPooling': False,
+            'enableTransaction': False,
+            'eventPerTransaction': 1,
         },
         'includeTimestampInEvent': includeTimestampInEvent,
-        'enableTransaction': False,
-        'eventPerTransaction': 1,
     }
     workload = {
         'messageSize': messageSize,

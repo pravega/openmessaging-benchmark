@@ -45,18 +45,18 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     // If null, a transaction has not been started.
     @GuardedBy("this")
     private Transaction<ByteBuffer> transaction;
-    private final int eventPerTransaction;
+    private final int eventsPerTransaction;
     private int eventCount = 0;
 
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
-            boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventPerTransaction) {
+            boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
 
         final String writerId = UUID.randomUUID().toString();
         transactionWriter = clientFactory.createTransactionalEventWriter(writerId, streamName,
                 new ByteBufferSerializer(),
                 EventWriterConfig.builder().enableConnectionPooling(enableConnectionPooling).build());
-        this.eventPerTransaction = eventPerTransaction;
+        this.eventsPerTransaction = eventsPerTransaction;
         this.includeTimestampInEvent = includeTimestampInEvent;
     }
 
@@ -74,30 +74,26 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         } else {
             payloadToWrite = ByteBuffer.wrap(payload);
         }
-        CompletableFuture<Void> future = CompletableFuture.runAsync(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    synchronized (this) {
-                        if (transaction == null) {
-                            transaction = transactionWriter.beginTxn();
-                        }
-                        if (key.isPresent()) {
-                            transaction.writeEvent(key.get(), payloadToWrite);
-                        } else {
-                            transaction.writeEvent(payloadToWrite);
-                        }
-                        if (++eventCount >= eventPerTransaction) {
-                            eventCount = 0;
-                            transaction.commit();
-                            transaction = null;
-                        }
-                    }
-                } catch (TxnFailedException e) {
-                    throw new RuntimeException("Transaction Write data failed ", e);
+        try {
+            synchronized (this) {
+                if (transaction == null) {
+                    transaction = transactionWriter.beginTxn();
+                }
+                if (key.isPresent()) {
+                    transaction.writeEvent(key.get(), payloadToWrite);
+                } else {
+                    transaction.writeEvent(payloadToWrite);
+                }
+                if (++eventCount >= eventsPerTransaction) {
+                    eventCount = 0;
+                    transaction.commit();
+                    transaction = null;
                 }
             }
-        });
+        } catch (TxnFailedException e) {
+            throw new RuntimeException("Transaction Write data failed ", e);
+        }
+        CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
         return future;
     }
 
