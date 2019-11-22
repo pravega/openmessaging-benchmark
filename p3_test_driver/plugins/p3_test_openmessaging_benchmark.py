@@ -328,6 +328,10 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
             deployed_driver = yaml.load(StringIO(results_yaml))
             driver['client']['serviceUrl'] = deployed_driver['client']['serviceUrl']
             driver['client']['httpUrl'] = deployed_driver['client']['httpUrl']
+        elif driver['name'] == 'Kafka':
+            return_code, results_yaml, errors = self.ssh('cat /opt/benchmark/driver-kafka/kafka.yaml')
+            deployed_driver = yaml.load(StringIO(results_yaml))
+            driver['commonConfig'] = deployed_driver['commonConfig']
         else:
             raise Exception('Unsupported driver')
 
