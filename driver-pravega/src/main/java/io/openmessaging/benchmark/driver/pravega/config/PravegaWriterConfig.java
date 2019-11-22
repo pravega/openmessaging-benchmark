@@ -20,4 +20,8 @@ package io.openmessaging.benchmark.driver.pravega.config;
 
 public class PravegaWriterConfig {
     public boolean enableConnectionPooling = true;
+    // enableTransaction will enable use transaction.
+    public boolean enableTransaction = false;
+    // after enabling transaction, user should define how many events in one transaction.
+    public int eventsPerTransaction = 1;
 }
