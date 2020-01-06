@@ -80,7 +80,7 @@ public class KafkaBenchmarkDriver implements BenchmarkDriver {
         producerProperties.load(new StringReader(config.producerConfig));
         producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-        if (producerProperties.getProperty("enableTransaction").equals("True")) {
+        if (Boolean.parseBoolean(producerProperties.getProperty("enableTransaction"))) {
             this.enableTransaction = true;
             producerProperties.put("transactional.id", UUID.randomUUID().toString());
             this.eventsPerTransaction = Integer.parseInt(producerProperties.getProperty("eventsPerTransaction", "100"));

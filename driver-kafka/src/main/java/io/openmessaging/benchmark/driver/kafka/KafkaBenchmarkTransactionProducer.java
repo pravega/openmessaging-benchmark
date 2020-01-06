@@ -26,7 +26,12 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class KafkaBenchmarkTransactionProducer implements BenchmarkProducer {
+
+    private static final Logger log = LoggerFactory.getLogger(KafkaBenchmarkTransactionProducer.class);
 
     private final KafkaProducer<String, byte[]> producer;
     private final String topic;
@@ -57,6 +62,13 @@ public class KafkaBenchmarkTransactionProducer implements BenchmarkProducer {
                 }
 
                 ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, key.orElse(null), payload);
+                producer.send(record, (metadata, exception) -> {
+                    if (exception != null) {
+                        future.completeExceptionally(exception);
+                    } else {
+                        future.complete(null);
+                    }
+                });
 
                 if (++counter >= eventsPerTransaction) {
                     producer.commitTransaction();
@@ -80,6 +92,7 @@ public class KafkaBenchmarkTransactionProducer implements BenchmarkProducer {
                 isClosed = true;
             } catch (Exception e) {
                 // perhaps there is no transaction started, do nothing;
+                log.info("exception occur while closing transaction producer", e);
             }
         }
         producer.close();
