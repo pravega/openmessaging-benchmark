@@ -23,8 +23,7 @@ public class PravegaConfig {
     public PravegaWriterConfig writer;
     // includeTimestampInEvent must be true to measure end-to-end latency.
     public boolean includeTimestampInEvent = true;
-    // public boolean includeTimestampInEvent = false;
     public boolean enableTransaction = true;
-    // define how many events in one after transaction is enabled.
+    // define how many events in one transaction after transaction is enabled.
     public int eventPerTransaction = 1;
 }
