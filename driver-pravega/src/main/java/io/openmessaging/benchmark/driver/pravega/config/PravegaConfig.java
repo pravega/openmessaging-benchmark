@@ -24,6 +24,7 @@ public class PravegaConfig {
     // includeTimestampInEvent must be true to measure end-to-end latency.
     public boolean includeTimestampInEvent = true;
     public boolean enableTransaction = true;
-    // define how many events in one transaction after transaction is enabled.
-    public int eventPerTransaction = 1;
+    // defines how many events the benchmark writes on each transaction prior
+    // committing it (only applies if transactional writers are enabled).
+    public int eventsPerTransaction = 1;
 }
