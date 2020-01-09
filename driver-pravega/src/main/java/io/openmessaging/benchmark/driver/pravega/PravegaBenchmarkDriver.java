@@ -62,9 +62,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         config = readConfig(configurationFile);
         log.info("Pravega driver configuration: {}", objectWriter.writeValueAsString(config));
 
-        clientConfig = ClientConfig.builder()
-                .controllerURI(URI.create(config.client.controllerURI))
-                .build();
+        clientConfig = ClientConfig.builder().controllerURI(URI.create(config.client.controllerURI)).build();
         scopeName = config.client.scopeName;
         streamManager = StreamManager.create(clientConfig);
         readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
@@ -107,35 +105,29 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
         topic = cleanName(topic);
         BenchmarkProducer producer = null;
-                if (config.enableTransaction) {
-                    producer = new PravegaBenchmarkTransactionProducer(
-                            topic,
-                            clientFactory,
-                            config.includeTimestampInEvent,
-                            config.writer.enableConnectionPooling,
-                            config.eventPerTransaction);
-                } else {
-                    producer = new PravegaBenchmarkProducer(
-                            topic,
-                            clientFactory,
-                            config.includeTimestampInEvent,
-                            config.writer.enableConnectionPooling);
-                }
+        if (config.enableTransaction) {
+            producer = new PravegaBenchmarkTransactionProducer(topic, clientFactory, config.includeTimestampInEvent,
+                    config.writer.enableConnectionPooling, config.eventsPerTransaction);
+        } else {
+            producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
+                    config.writer.enableConnectionPooling);
+        }
         return CompletableFuture.completedFuture(producer);
     }
 
     @Override
-    public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName, ConsumerCallback consumerCallback) {
+    public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName,
+            ConsumerCallback consumerCallback) {
         topic = cleanName(topic);
         subscriptionName = cleanName(subscriptionName);
-        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback, clientFactory, readerGroupManager,
-                config.includeTimestampInEvent);
+        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback,
+                clientFactory, readerGroupManager, config.includeTimestampInEvent);
         return CompletableFuture.completedFuture(consumer);
     }
 
     private void deleteTopics() {
         synchronized (createdTopics) {
-            for (String topic: createdTopics) {
+            for (String topic : createdTopics) {
                 log.info("deleteTopics: topic={}", topic);
                 streamManager.sealStream(scopeName, topic);
                 streamManager.deleteStream(scopeName, topic);
