@@ -177,7 +177,10 @@ P3 Test Driver can be used to run multiple tests automatically.
 
 ```
 cd ../p3_test_driver
-tests/testgen_pravega_ssh.py | ./p3_test_driver.py -t - -c config/pravega_ssh.config.yaml
+virtualenv -p python3 venv
+source venv/bin/activate
+pip install p3_test_driver
+tests/testgen_pravega_ssh.py | p3_test_driver -t - -c config/pravega_ssh.config.yaml
 ```
 
 # Run Jupyter for data analysis of results from P3 Test Driver
@@ -188,4 +191,4 @@ docker run -d -p 8888:8888 -e JUPYTER_ENABLE_LAB=yes -v "$PWD":/home/jovyan/work
 docker logs jupyter
 ```
 
-Open Notebook results-analyzer/results-analyzer-2.ipynb and run all cells.
+Open Notebook results-analyzer/results-analyzer.ipynb and run all cells.

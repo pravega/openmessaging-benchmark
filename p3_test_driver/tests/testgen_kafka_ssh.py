@@ -3,7 +3,6 @@
 from __future__ import print_function
 import json
 import sys
-import ruamel.yaml
 
 def add_test():
     driver = {
@@ -18,7 +17,8 @@ def add_test():
           "min.insync.replicas=3\n"
           # This is for syncing to disk
           # "flush.messages=1\n"
-          # "flush.ms=0\n",
+          # "flush.ms=0\n"
+          ,
 
         'producerConfig':
           "acks=all\n"
@@ -27,7 +27,8 @@ def add_test():
           # This is for transaction
           # "enableTransaction=True\n"
           # "eventPerTransaction=100\n"
-          # "enable.idempotence=true",
+          # "enable.idempotence=true"
+          ,
 
         'consumerConfig':
           "auto.offset.reset=earliest\n"

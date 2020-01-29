@@ -1,20 +1,19 @@
-
-# Written by Claudio Fahey (claudio.fahey@emc.com)
-
 from __future__ import division
 
 import datetime
 import json
 import logging
 import os
-import p3_plugin_manager
 import subprocess
 import tempfile
 import yaml
 from io import StringIO
-from p3_test import TimeoutException, BaseTest
-from p3_util import record_result
-from system_command import system_command, time_duration_to_seconds, ssh
+
+# P3 Libraries
+from p3_test_driver import p3_plugin_manager
+from p3_test_driver.p3_test import TimeoutException, BaseTest
+from p3_test_driver.p3_util import record_result
+from p3_test_driver.system_command import system_command, time_duration_to_seconds, ssh
 
 _default_configs = {
     'openmessaging-benchmark-k8s': {
@@ -38,7 +37,7 @@ class PluginInfo(p3_plugin_manager.IP3Plugin):
         return [
             {
                 'class_type': 'test',
-                'class_name': 'openmessaging-benchmark-k8s',    # TODO: allow same class name as below
+                'class_name': 'openmessaging-benchmark-k8s',
                 'class': OpenMessagingBenchmarkK8sTest,
             },
             {
@@ -248,9 +247,6 @@ class OpenMessagingBenchmarkSSHTest(BaseTest):
         super(OpenMessagingBenchmarkSSHTest, self).__init__(test_config, default_configs=default_configs)
 
     def build(self):
-        # tarball = self.test_config['tarball']
-        # cmd = ['mvn', 'install']
-        # subprocess.run(cmd, check=True, cwd='..')
         pass
 
     def undeploy(self, wait=True):
