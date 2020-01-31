@@ -2,10 +2,10 @@
 
 This tutorial shows you how to run OpenMessaging benchmarks for Pravega. You can currently deploy to the following platforms:
 
-* [Amazon Web Services (AWS)](DEPLOY_A_PRAVEGA_CLUSTER_ON_AMAZON_WEB_SERVICES)
+* [Amazon Web Services (AWS)](#deploy-a-pravega-cluster-on-amazon-web-services)
 
 # INITIAL SETUP
-To being, you’ll need to clone the benchmark repo from the Pravega organization on GitHub:
+To begin with, you’ll need to clone the benchmark repo from the Pravega organization on GitHub:
 ```
 $ git clone https://github.com/pravega/openmessaging-benchmark.git
 $ cd openmessaging-benchmark
