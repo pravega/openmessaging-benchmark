@@ -117,6 +117,7 @@ $ sudo bin/benchmark \
   workloads/1-topic-16-partitions-1kb.yaml
 ```
 
+
 # SPECIFY CLIENT HOSTS
 By default, benchmarks will be run from the set of hosts created by Terraform. You can also specify a comma-separated list of client hosts using the `--workers` flag (or `-w` for short):
 
@@ -142,5 +143,10 @@ $ terraform destroy -force
 ```
 Make sure to let the process run to completion (it could take several minutes). Once the tear down is complete, all AWS resources that you created for the Pulsar benchmarking suite will have been removed.
 
+# P3 Test Driver
+
+[P3 Test Driver](https://github.com/pravega/p3_test_driver) can be used to run multiple tests automatically and plot the results.
+
 # TROUBLESHOOTING
 See [troubleshooting](doc/troubleshooting.md).
+
