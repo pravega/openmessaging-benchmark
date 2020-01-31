@@ -68,7 +68,7 @@ There’s a handful of configurable parameters related to the Terraform deployme
 | Variable | Description | Default |
 | ----- | ----------- | ------ |
 | `region` | The AWS region in which the Pulsar cluster will be deployed | `us-west-2` |
-| `public_key_path` | The path to the SSH public key that you’ve generated | ``~/.ssh/pravega_aws.pub` |
+| `public_key_path` | The path to the SSH public key that you’ve generated | `~/.ssh/pravega_aws.pub` |
 | `ami` | The [Amazon Machine Image (AWI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) to be used by the cluster’s machines | `ami-9fa343e7` |
 | `instance_types` | The EC2 instance types used by the various components | `i3.4xlarge` (BookKeeper bookies), `m5.large`(Controller), `r5.xlarge`(Segmentstore) `t2.small` (ZooKeeper), `c4.8xlarge` (benchmarking client) |
 
@@ -83,7 +83,7 @@ $ ansible-playbook \
   --inventory `which terraform-inventory` \
   deploy.yaml
 ```
-If you’re using an SSH private key path different from ``~/.ssh/pulsar_aws`, you can specify that path using the ``--private-key` flag, for example ``--private-key=~/.ssh/my_key`.
+If you’re using an SSH private key path different from `~/.ssh/pulsar_aws`, you can specify that path using the `--private-key` flag, for example ``--private-key=~/.ssh/my_key`.
 
 # SSHING INTO THE CLIENT HOST
 In the [output](https://learn.hashicorp.com/terraform/getting-started/outputs.html) produced by Terraform, there’s a `client_ssh_host` variable that provides the IP address for the client EC2 host from which benchmarks can be run. You can SSH into that host using this command:
