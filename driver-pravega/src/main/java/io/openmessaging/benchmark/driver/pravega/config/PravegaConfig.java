@@ -19,12 +19,23 @@
 package io.openmessaging.benchmark.driver.pravega.config;
 
 public class PravegaConfig {
+    // By default, Stream auto-scaling is not configured. So the scaling thresholds are initialized with -1.
+    public static int DEFAULT_STREAM_AUTOSCALING_VALUE = -1;
+
     public PravegaClientConfig client;
     public PravegaWriterConfig writer;
+
     // includeTimestampInEvent must be true to measure end-to-end latency.
     public boolean includeTimestampInEvent = true;
     public boolean enableTransaction = true;
+
     // defines how many events the benchmark writes on each transaction prior
     // committing it (only applies if transactional writers are enabled).
     public int eventsPerTransaction = 1;
+
+    // Enable the configuration of Streams with auto-scaling policies
+    public boolean enableStreamAutoScaling = false;
+    // Number of events/bytes per second to trigger a Segment split in Pravega.
+    public int eventsPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
+    public int bytesPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
 }
