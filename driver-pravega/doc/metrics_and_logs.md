@@ -1,4 +1,4 @@
-# Collecting Logs and Metrics
+# COLLECTING LOGS AND METRICS
 
 This will download logs and metrics from the cluster to your local machine.
 
@@ -52,4 +52,4 @@ Configure Grafana with the following data sources:
     - HTTP URL: http://influxdb:8086
     - InfluxDB Details Database: pravega
 
-Load dashboards from [deploy/templates/dashboards](deploy/templates/dashboards).
+Load dashboards from [deploy/templates/dashboards](../deploy/templates/dashboards).

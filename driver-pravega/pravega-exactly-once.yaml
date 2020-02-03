@@ -30,3 +30,5 @@ writer:
   enableConnectionPooling: False
 
 includeTimestampInEvent: False
+enableTransaction: True
+eventPerTransaction: 1

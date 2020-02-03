@@ -17,11 +17,17 @@ Once you have the repo cloned locally, you can create all the artifacts necessar
 ```
 $ mvn install
 ```
-If you want to use the pre-release version of Pravega or the master branch of Pravega, please check [how to build Pravega](doc/build_pravega).
+If you want to use the pre-release version of Pravega or the master branch of Pravega, please check [how to build Pravega](doc/build_pravega.md).
 
 # DEPLOY A PRAVEGA CLUSTER ON AMAZON WEB SERVICES
 
-You can deploy a Pulsar cluster on AWS (for benchmarking purposes) using [Terraform](https://www.terraform.io/) and [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html). You’ll need to have both of those tools installed as well as the `terraform-inventory` [plugin](https://github.com/adammck/terraform-inventory) for Terraform.
+You can deploy a Pravega cluster on AWS (for benchmarking purposes) using [Terraform 0.11.14](https://www.terraform.io/) and [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
+You’ll need to have both of those tools installed as well as the `terraform-inventory` [plugin](https://github.com/adammck/terraform-inventory) for Terraform.
+
+You also need to install an Ansible modules to support metrics.
+```
+ansible-galaxy install cloudalchemy.node-exporter
+```
 
 In addition, you’ll need to:
 
@@ -46,7 +52,7 @@ $ ls ~/.ssh/pravega_aws*
 # CREATE RESOURCES USING TERRAFORM
 With SSH keys in place, you can create the necessary AWS resources using just a few Terraform commands:
 ```
-$ cd driver-pulsar/deploy
+$ cd driver-pravega/deploy
 $ terraform init
 $ terraform apply
 ```
@@ -67,10 +73,10 @@ There’s a handful of configurable parameters related to the Terraform deployme
 
 | Variable | Description | Default |
 | ----- | ----------- | ------ |
-| `region` | The AWS region in which the Pulsar cluster will be deployed | `us-west-2` |
+| `region` | The AWS region in which the Pravega cluster will be deployed | `us-west-2` |
 | `public_key_path` | The path to the SSH public key that you’ve generated | `~/.ssh/pravega_aws.pub` |
 | `ami` | The [Amazon Machine Image (AWI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) to be used by the cluster’s machines | `ami-9fa343e7` |
-| `instance_types` | The EC2 instance types used by the various components | `i3.4xlarge` (BookKeeper bookies), `m5.large`(Controller), `r5.xlarge`(Segmentstore) `t2.small` (ZooKeeper), `c4.8xlarge` (benchmarking client) |
+| `instance_types` | The EC2 instance types used by the various components | `i3.4xlarge` (BookKeeper bookies), `m5.large`(Controller), `t2.small` (ZooKeeper), `c4.8xlarge` (benchmarking client) |
 
 If you modify the `public_key_path`, make sure that you point to the appropriate SSH key path when running the [Ansible playbook](#RUNNING_THE_ANSIBLE_PLAYBOOK).
 
@@ -83,18 +89,17 @@ $ ansible-playbook \
   --inventory `which terraform-inventory` \
   deploy.yaml
 ```
-If you’re using an SSH private key path different from `~/.ssh/pulsar_aws`, you can specify that path using the `--private-key` flag, for example ``--private-key=~/.ssh/my_key`.
+If you’re using an SSH private key path different from `~/.ssh/pravega_aws`, you can specify that path using the `--private-key` flag, for example ``--private-key=~/.ssh/my_key`.
 
 # SSHING INTO THE CLIENT HOST
 In the [output](https://learn.hashicorp.com/terraform/getting-started/outputs.html) produced by Terraform, there’s a `client_ssh_host` variable that provides the IP address for the client EC2 host from which benchmarks can be run. You can SSH into that host using this command:
 ```
-$ ssh -i ~/.ssh/pulsar_aws ec2-user@$(terraform output client_ssh_host)
+$ ssh -i ~/.ssh/pravega_aws ec2-user@$(terraform output client_ssh_host)
 ```
 # RUNNING THE BENCHMARKS FROM THE CLIENT HOSTS
 > The benchmark scripts can be run from the /opt/benchmark working directory.
 
 Once you’ve successfully SSHed into the client host, you can run any of the [existing benchmarking workloads](http://openmessaging.cloud/docs/benchmarks/#benchmarking-workloads) by specifying the YAML file for that workload when running the `benchmark` executable. All workloads are in the `workloads` folder. Here’s an example:
-For a more detailed guide, see http://openmessaging.cloud/docs/benchmarks/pulsar/.
 
 ```
 $ sudo bin/benchmark \
@@ -103,7 +108,7 @@ $ sudo bin/benchmark \
 ```
 > Although benchmarks are run from a specific client host, the benchmarks are run in distributed mode, across multiple client hosts.
 
-There are multiple Pravega “modes” for which you can run benchmarks. Each mode has its own YAML configuration file in the driver-pulsar folder.
+There are multiple Pravega “modes” for which you can run benchmarks. Each mode has its own YAML configuration file in the driver-pravega folder.
 
 | Mode | Description | Config file |
 | ----- | ----------- | ------ |
@@ -122,7 +127,7 @@ By default, benchmarks will be run from the set of hosts created by Terraform. Y
 
 ```
 $ sudo bin/benchmark \
-  --drivers driver-pulsar/pravega-exactly-once.yaml \
+  --drivers driver-pravega/pravega-exactly-once.yaml \
   --workers 1.2.3.4:8080,4.5.6.7:8080 \ # or -w 1.2.3.4:8080,4.5.6.7:8080
   workloads/1-topic-16-partitions-1kb.yaml
 ```
@@ -131,6 +136,7 @@ The OpenMessaging benchmarking suite stores results in JSON files in the `/opt/b
 
 ```
 $ scp -i ~/.ssh/pravega_aws ec2-user@$(terraform output client_ssh_host):/opt/benchmark/*.json .
+
 ```
 # COLLECTING METRICS AND LOGS
 See [metrics and logs](doc/metrics_and_logs.md).
@@ -140,7 +146,10 @@ Once you’re finished running your benchmarks, you should tear down the AWS inf
 ```
 $ terraform destroy -force
 ```
-Make sure to let the process run to completion (it could take several minutes). Once the tear down is complete, all AWS resources that you created for the Pulsar benchmarking suite will have been removed.
+Make sure to let the process run to completion (it could take several minutes). Once the tear down is complete, all AWS resources that you created for the Pravega benchmarking suite will have been removed.
+
+# RUN IN KUBERNETES
+See [run in Kubernetes](doc/run-in-k8s.md).
 
 # TROUBLESHOOTING
 See [troubleshooting](doc/troubleshooting.md).

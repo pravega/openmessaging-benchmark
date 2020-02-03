@@ -12,9 +12,9 @@ git checkout master
 
 This will build the file `pravega/build/distributions/pravega-0.7.0-2361.f273314-SNAPSHOT.tgz.`
 
-If needed, change the variable `pravegaVersion` in `deploy.yaml` to match the version built.
+If needed, change the variable `pravegaVersion` in [vars.yaml](../deploy/vars.yaml) to match the version built.
 
-If needed, change `pom.xml` to match the version built.
+If needed, change [pom.xml](../pom.xml) to match the version built.
 
 ## Build Benchmark
 
