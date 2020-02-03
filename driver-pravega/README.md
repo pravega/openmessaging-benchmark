@@ -111,8 +111,8 @@ There are multiple Pravega “modes” for which you can run benchmarks. Each mo
 
 | Mode | Description | Config file |
 | ----- | ----------- | ------ |
-| Standard | Pravega with transaction disabled (at-least-once semantics) | pravega.yaml |
-| Exactly Once | Pravega with transaction enabled (exactly-once semantics) | pravega-exactly-once.yaml |
+| Standard | Pravega with transaction disabled (at-least-once semantics) | [pravega.yaml](./pravega.yaml) |
+| Exactly Once | Pravega with transaction enabled (exactly-once semantics) | [pravega-exactly-once.yaml](./pravega-exactly-once.yaml) |
 
 The example used the “standard” mode as configured in `driver-pravega/pravega.yaml`. Here’s an example of running a benchmarking workload in exactly-once mode:
 ```
