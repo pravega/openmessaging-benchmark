@@ -61,7 +61,7 @@ This will install the following [EC2](https://aws.amazon.com/ec2) instances (plu
 | Resource | Description | Count |
 | ----- | ----------- | ------ |
 | Controller instances| The VMs on which a Pravega controller will run | 1 |
-| Bookkeeper instances | The VMs on which a Bookkeeper will run | 3 |
+| Bookkeeper instances | The VMs on which a Bookkeeper and Segmentstore will run | 3 |
 | ZooKeeper instances | The VMs on which a ZooKeeper node will run | 3 |
 | Client instance | The VM from which the benchmarking suite itself will be run | 4 |
 
@@ -88,7 +88,7 @@ $ ansible-playbook \
   --inventory `which terraform-inventory` \
   deploy.yaml
 ```
-If you’re using an SSH private key path different from `~/.ssh/pravega_aws`, you can specify that path using the `--private-key` flag, for example ``--private-key=~/.ssh/my_key`.
+If you’re using an SSH private key path different from `~/.ssh/pravega_aws`, you can specify that path using the `--private-key` flag, for example `--private-key=~/.ssh/my_key`.
 
 # SSHING INTO THE CLIENT HOST
 In the [output](https://learn.hashicorp.com/terraform/getting-started/outputs.html) produced by Terraform, there’s a `client_ssh_host` variable that provides the IP address for the client EC2 host from which benchmarks can be run. You can SSH into that host using this command:
@@ -112,9 +112,9 @@ There are multiple Pravega “modes” for which you can run benchmarks. Each mo
 | Mode | Description | Config file |
 | ----- | ----------- | ------ |
 | Standard | Pravega with transaction disabled (at-least-once semantics) | pravega.yaml |
-| Exactly Once | Pravega with transaction enabled (exactly-once semantics) | pravega-transaction.yaml |
+| Exactly Once | Pravega with transaction enabled (exactly-once semantics) | pravega-exactly-once.yaml |
 
-The example used the “standard” mode as configured in `driver-pravega/pravega.yaml`. Here’s an example of running a benchmarking workload in exactly once mode:
+The example used the “standard” mode as configured in `driver-pravega/pravega.yaml`. Here’s an example of running a benchmarking workload in exactly-once mode:
 ```
 $ sudo bin/benchmark \
   --drivers driver-pravega/pravega-exactly-once.yaml \
@@ -136,7 +136,6 @@ The OpenMessaging benchmarking suite stores results in JSON files in the `/opt/b
 
 ```
 $ scp -i ~/.ssh/pravega_aws ec2-user@$(terraform output client_ssh_host):/opt/benchmark/*.json .
-
 ```
 # COLLECTING METRICS AND LOGS
 See [metrics and logs](doc/metrics_and_logs.md).
@@ -149,7 +148,7 @@ $ terraform destroy -force
 Make sure to let the process run to completion (it could take several minutes). Once the tear down is complete, all AWS resources that you created for the Pravega benchmarking suite will have been removed.
 
 # RUN IN KUBERNETES
-See [run in Kubernetes](doc/run-in-k8s.md).
+See [run in Kubernetes](doc/run_in_k8s.md).
 
 # P3 Test Driver
 
