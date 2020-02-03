@@ -122,6 +122,7 @@ $ sudo bin/benchmark \
   workloads/1-topic-16-partitions-1kb.yaml
 ```
 
+
 # SPECIFY CLIENT HOSTS
 By default, benchmarks will be run from the set of hosts created by Terraform. You can also specify a comma-separated list of client hosts using the `--workers` flag (or `-w` for short):
 
@@ -151,5 +152,10 @@ Make sure to let the process run to completion (it could take several minutes). 
 # RUN IN KUBERNETES
 See [run in Kubernetes](doc/run-in-k8s.md).
 
+# P3 Test Driver
+
+[P3 Test Driver](https://github.com/pravega/p3_test_driver) can be used to run multiple tests automatically and plot the results.
+
 # TROUBLESHOOTING
 See [troubleshooting](doc/troubleshooting.md).
+
