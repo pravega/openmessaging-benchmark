@@ -61,7 +61,6 @@ This will install the following [EC2](https://aws.amazon.com/ec2) instances (plu
 | Resource | Description | Count |
 | ----- | ----------- | ------ |
 | Controller instances| The VMs on which a Pravega controller will run | 1 |
-| Segmentstore instances | The VMs on which a Pravega segmentstore will run | 3 |
 | Bookkeeper instances | The VMs on which a Bookkeeper will run | 3 |
 | ZooKeeper instances | The VMs on which a ZooKeeper node will run | 3 |
 | Client instance | The VM from which the benchmarking suite itself will be run | 4 |
@@ -158,4 +157,3 @@ See [run in Kubernetes](doc/run-in-k8s.md).
 
 # TROUBLESHOOTING
 See [troubleshooting](doc/troubleshooting.md).
-
