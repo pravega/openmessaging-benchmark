@@ -27,6 +27,8 @@ client:
   scopeName: examples
 
 writer:
-  enableConnectionPooling: True
+  enableConnectionPooling: False
 
 includeTimestampInEvent: False
+enableStreamAutoScaling: False
+eventsPerSecond: 10000

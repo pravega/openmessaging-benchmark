@@ -60,7 +60,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
                 UUID.randomUUID().toString(),
                 subscriptionName,
                 new ByteBufferSerializer(),
-                ReaderConfig.builder().build());
+                ReaderConfig.builder().disableTimeWindows(true).build());
         // Start a thread to read events.
         this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
