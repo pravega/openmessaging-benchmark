@@ -1,5 +1,5 @@
 ---
-pravegaVersion: "0.7.0-2476.84b060d-SNAPSHOT"
+pravegaVersion: "0.7.0-50.84b060d-SNAPSHOT"
 zookeeperVersion: "3.5.4-beta"
 bookkeeperVersion: "4.9.2"
 prometheusVersion: "2.2.1"
