@@ -28,14 +28,13 @@ public class PravegaConfig {
     // includeTimestampInEvent must be true to measure end-to-end latency.
     public boolean includeTimestampInEvent = true;
     public boolean enableTransaction = true;
-
     // defines how many events the benchmark writes on each transaction prior
     // committing it (only applies if transactional writers are enabled).
     public int eventsPerTransaction = 1;
 
     // Enable the configuration of Streams with auto-scaling policies
     public boolean enableStreamAutoScaling = false;
-    // Number of events/bytes per second to trigger a Segment split in Pravega.
+    // Number of events/kbytes per second to trigger a Segment split in Pravega.
     public int eventsPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
-    public int bytesPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
+    public int kbytesPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
 }

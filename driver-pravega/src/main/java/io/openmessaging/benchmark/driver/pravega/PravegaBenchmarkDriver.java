@@ -99,10 +99,10 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         ScalingPolicy scalingPolicy;
         // Create a fixed or auto-scaling Stream based on user configuration.
         if (config.enableStreamAutoScaling && (config.eventsPerSecond != PravegaConfig.DEFAULT_STREAM_AUTOSCALING_VALUE ||
-                config.bytesPerSecond != PravegaConfig.DEFAULT_STREAM_AUTOSCALING_VALUE)) {
+                config.kbytesPerSecond != PravegaConfig.DEFAULT_STREAM_AUTOSCALING_VALUE)) {
             scalingPolicy = config.eventsPerSecond != PravegaConfig.DEFAULT_STREAM_AUTOSCALING_VALUE ?
                     ScalingPolicy.byEventRate(config.eventsPerSecond, 2, partitions) :
-                    ScalingPolicy.byDataRate(config.bytesPerSecond, 2, partitions);
+                    ScalingPolicy.byDataRate(config.kbytesPerSecond, 2, partitions);
         } else {
             scalingPolicy = ScalingPolicy.fixed(partitions);
         }
