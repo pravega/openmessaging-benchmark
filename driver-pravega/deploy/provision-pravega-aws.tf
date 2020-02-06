@@ -148,19 +148,6 @@ resource "aws_instance" "controller" {
   }
 }
 
-resource "aws_instance" "segmentstore" {
-  ami                    = "${var.ami}"
-  instance_type          = "${var.instance_types["segmentstore"]}"
-  key_name               = "${aws_key_pair.auth.id}"
-  subnet_id              = "${aws_subnet.benchmark_subnet.id}"
-  vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
-  count                  = "${var.num_instances["segmentstore"]}"
-
-  tags {
-    Name = "segmentstore-${count.index}"
-  }
-}
-
 resource "aws_instance" "bookkeeper" {
   ami                    = "${var.ami}"
   instance_type          = "${var.instance_types["bookkeeper"]}"
@@ -200,6 +187,7 @@ resource "aws_instance" "metrics" {
   }
 }
 
+# Change the EFS provisioned TP here
 resource "aws_efs_file_system" "tier2" {
   throughput_mode = "provisioned"
   provisioned_throughput_in_mibps = 500
@@ -224,10 +212,6 @@ output "metrics_host" {
 
 output "controller_0_ssh_host" {
   value = "${aws_instance.controller.0.public_ip}"
-}
-
-output "segmentstore_0_ssh_host" {
-  value = "${aws_instance.segmentstore.0.public_ip}"
 }
 
 output "bookkeeper_0_ssh_host" {

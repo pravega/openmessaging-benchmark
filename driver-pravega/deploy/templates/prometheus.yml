@@ -56,7 +56,7 @@ scrape_configs:
           group: 'controller'
 
       - targets:
-{% for worker in groups['segmentstore'] %}
+{% for worker in groups['bookkeeper'] %}
           - {{ hostvars[worker].private_ip }}:9100
 {% endfor %}
         labels:

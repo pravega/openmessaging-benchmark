@@ -32,14 +32,15 @@
         prometheusVersion: "{{ prometheusVersion }}"
         pravegaContainersPerSegmentStore: "{{ pravegaContainersPerSegmentStore }}"
         zookeeperServers: "{{ groups['zookeeper'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | map('regex_replace', '^(.*)$', '\\1:2181') | join(',') }}"
-        controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090/"
+        controllerUrl: "tcp://{{ hostvars[groups['controller'][0]].private_ip }}:9090"
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
-        segmentStoreCount: "{{ groups['segmentstore'] | length }}"
+        segmentStoreCount: "{{ groups['bookkeeper'] | length }}"
         influxDBURI: "http://{{ hostvars[groups['metrics'][0]].private_ip }}:8086"
     - set_fact:
         # Change below to use a published release of Pravega or a local build.
 #        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
 #        pravegaSrcRemote: yes
+#       Here is the file path for local Pravega build
         pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
         pravegaSrcRemote: no
         pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
@@ -68,7 +69,7 @@
         warn: no
     - name: Delete files on tier 2
       shell: "rm -rf /mnt/tier2/*"
-      when: groups['segmentstore'][0] == inventory_hostname
+      when: groups['bookkeeper'][0] == inventory_hostname
       args:
         warn: no
     - name: Unmount tier 2
@@ -208,7 +209,7 @@
     - file: path=/opt/zookeeper state=directory
     - name: Download ZooKeeper binary package
       unarchive:
-        src: "http://archive.apache.org/dist/zookeeper/zookeeper-{{ zookeeperVersion }}/zookeeper-{{ zookeeperVersion }}.tar.gz"
+        src: "http://archive.apache.org/dist/zookeeper/zookeeper-{{ zookeeperVersion }}/apache-zookeeper-{{ zookeeperVersion }}-bin.tar.gz"
         remote_src: yes
         dest: /opt/zookeeper
         extra_opts: ["--strip-components=1"]
@@ -254,7 +255,7 @@
         - /pravega/pravega-cluster/bookkeeper
 
 - name: Pravega common installation
-  hosts: ["controller", "segmentstore"]
+  hosts: ["controller", "bookkeeper"]
   tags: ["controller", "segmentstore"]
   connection: ssh
   become: true
@@ -274,6 +275,9 @@
     - template:
         src: "templates/controller.config.properties"
         dest: "/opt/pravega/conf/controller.config.properties"
+    - template:
+        src: "templates/logback.xml"
+        dest: "/opt/pravega/conf/logback.xml"
 
 - name: Pravega Controller installation
   hosts: controller
@@ -368,7 +372,7 @@
         enabled: yes
 
 - name: Pravega Segment Store installation
-  hosts: segmentstore
+  hosts: bookkeeper
   tags: ["segmentstore"]
   connection: ssh
   become: true
