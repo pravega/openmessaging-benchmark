@@ -43,7 +43,7 @@ resource "aws_vpc" "benchmark_vpc" {
   cidr_block = "10.0.0.0/16"
   enable_dns_hostnames = true
 
-  tags {
+  tags = {
     Name = "Pravega-Benchmark-VPC-${random_id.hash.hex}"
   }
 }
@@ -112,7 +112,7 @@ resource "aws_security_group" "benchmark_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags {
+  tags = {
     Name = "Benchmark-Security-Group-${random_id.hash.hex}"
   }
 }
@@ -130,7 +130,7 @@ resource "aws_instance" "zookeeper" {
   vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
   count                  = "${var.num_instances["zookeeper"]}"
 
-  tags {
+  tags = {
     Name = "zk-${count.index}"
   }
 }
@@ -143,7 +143,7 @@ resource "aws_instance" "controller" {
   vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
   count                  = "${var.num_instances["controller"]}"
 
-  tags {
+  tags = {
     Name = "controller-${count.index}"
   }
 }
@@ -156,7 +156,7 @@ resource "aws_instance" "bookkeeper" {
   vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
   count                  = "${var.num_instances["bookkeeper"]}"
 
-  tags {
+  tags = {
     Name = "bookkeeper-${count.index}"
   }
 }
@@ -169,7 +169,7 @@ resource "aws_instance" "client" {
   vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
   count                  = "${var.num_instances["client"]}"
 
-  tags {
+  tags = {
     Name = "pravega-client-${count.index}"
   }
 }
@@ -182,7 +182,7 @@ resource "aws_instance" "metrics" {
   vpc_security_group_ids = ["${aws_security_group.benchmark_security_group.id}"]
   count                  = "${var.num_instances["metrics"]}"
 
-  tags {
+  tags = {
     Name = "metrics-${count.index}"
   }
 }
