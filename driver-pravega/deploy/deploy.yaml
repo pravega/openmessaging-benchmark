@@ -208,7 +208,7 @@
     - file: path=/opt/zookeeper state=directory
     - name: Download ZooKeeper binary package
       unarchive:
-        src: "http://archive.apache.org/dist/zookeeper/zookeeper-{{ zookeeperVersion }}/zookeeper-{{ zookeeperVersion }}.tar.gz"
+        src: "http://archive.apache.org/dist/zookeeper/zookeeper-{{ zookeeperVersion }}/apache-zookeeper-{{ zookeeperVersion }}-bin.tar.gz"
         remote_src: yes
         dest: /opt/zookeeper
         extra_opts: ["--strip-components=1"]
@@ -274,6 +274,9 @@
     - template:
         src: "templates/controller.config.properties"
         dest: "/opt/pravega/conf/controller.config.properties"
+    - template:
+        src: "templates/logback.xml"
+        dest: "/opt/pravega/conf/logback.xml"
 
 - name: Pravega Controller installation
   hosts: controller
