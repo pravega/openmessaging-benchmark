@@ -21,7 +21,7 @@ If you want to use the pre-release version of Pravega or the master branch of Pr
 
 # DEPLOY A PRAVEGA CLUSTER ON AMAZON WEB SERVICES
 
-You can deploy a Pravega cluster on AWS (for benchmarking purposes) using [Terraform 0.11.14](https://www.terraform.io/) and [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
+You can deploy a Pravega cluster on AWS (for benchmarking purposes) using [Terraform 0.12.20](https://www.terraform.io/) and [Ansible 2.8.5](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
 You’ll need to have both of those tools installed as well as the `terraform-inventory` [plugin](https://github.com/adammck/terraform-inventory) for Terraform.
 
 You also need to install an Ansible modules to support metrics.
