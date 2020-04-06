@@ -363,7 +363,8 @@ public class LocalWorker implements Worker, ConsumerCallback {
         totalMessagesReceived.reset();
 
         try {
-            Thread.sleep(100);
+            // TODO: Must wait for all tasks in executor to complete. For now, sleep a while.
+            Thread.sleep(5000);
 
             producers.parallelStream().forEach((BenchmarkProducer benchmarkProducer) -> {
                 try {
