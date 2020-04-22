@@ -37,4 +37,8 @@ public class PravegaConfig {
     // Number of events/kbytes per second to trigger a Segment split in Pravega.
     public int eventsPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
     public int kbytesPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
+
+    // By default, streams created for benchmarking will be deleted at the end of the test.
+    // Set to false to keep the streams.
+    public boolean deleteStreams = true;
 }
