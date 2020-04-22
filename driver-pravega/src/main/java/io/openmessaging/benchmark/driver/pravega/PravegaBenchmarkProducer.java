@@ -18,6 +18,7 @@
  */
 package io.openmessaging.benchmark.driver.pravega;
 
+import io.netty.buffer.Unpooled;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
@@ -51,15 +52,14 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
-        ByteBuffer payloadToWrite;
+        final ByteBuffer payloadToWrite;
         if (includeTimestampInEvent) {
             // We must create a new buffer for the combined event timestamp and payload.
-            // This requires copying the entire payload.
-            long eventTimestamp = System.currentTimeMillis();
-            payloadToWrite = ByteBuffer.allocate(Long.BYTES + payload.length);
-            payloadToWrite.putLong(eventTimestamp);
-            payloadToWrite.put(payload);
-            payloadToWrite.flip();
+            final long eventTimestamp = System.currentTimeMillis();
+            final ByteBuffer timestampBuf = ByteBuffer.allocate(Long.BYTES);
+            timestampBuf.putLong(eventTimestamp);
+            timestampBuf.flip();
+            payloadToWrite = Unpooled.wrappedBuffer(timestampBuf, ByteBuffer.wrap(payload)).nioBuffer();
         } else {
             payloadToWrite = ByteBuffer.wrap(payload);
         }

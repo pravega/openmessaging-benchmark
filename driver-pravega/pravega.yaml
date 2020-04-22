@@ -29,6 +29,6 @@ client:
 writer:
   enableConnectionPooling: False
 
-includeTimestampInEvent: False
+includeTimestampInEvent: true
 enableStreamAutoScaling: False
 eventsPerSecond: 10000
