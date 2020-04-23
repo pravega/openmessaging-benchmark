@@ -40,4 +40,8 @@ public class PravegaConfig {
 
     // Create a Pravega scope. Must set to false in Streaming Data Platform.
     public boolean createScope = true;
+
+    // By default, streams created for benchmarking will be deleted at the end of the test.
+    // Set to false to keep the streams.
+    public boolean deleteStreams = true;
 }
