@@ -37,4 +37,7 @@ public class PravegaConfig {
     // Number of events/kbytes per second to trigger a Segment split in Pravega.
     public int eventsPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
     public int kbytesPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
+
+    // Create a Pravega scope. Must set to false in Streaming Data Platform.
+    public boolean createScope = true;
 }
