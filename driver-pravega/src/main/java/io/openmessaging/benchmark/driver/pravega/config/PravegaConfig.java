@@ -38,6 +38,9 @@ public class PravegaConfig {
     public int eventsPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
     public int kbytesPerSecond = DEFAULT_STREAM_AUTOSCALING_VALUE;
 
+    // Create a Pravega scope. Must set to false in Streaming Data Platform.
+    public boolean createScope = true;
+
     // By default, streams created for benchmarking will be deleted at the end of the test.
     // Set to false to keep the streams.
     public boolean deleteStreams = true;

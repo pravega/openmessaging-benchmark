@@ -95,7 +95,9 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         synchronized (createdTopics) {
             createdTopics.add(topic);
         }
-        streamManager.createScope(scopeName);
+        if (config.createScope) {
+            streamManager.createScope(scopeName);
+        }
         ScalingPolicy scalingPolicy;
         // Create a fixed or auto-scaling Stream based on user configuration.
         if (config.enableStreamAutoScaling && (config.eventsPerSecond != PravegaConfig.DEFAULT_STREAM_AUTOSCALING_VALUE ||
