@@ -139,7 +139,9 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
             for (String topic : createdTopics) {
                 log.info("deleteTopics: topic={}", topic);
                 streamManager.sealStream(scopeName, topic);
-                streamManager.deleteStream(scopeName, topic);
+                if (config.deleteStreams) {
+                    streamManager.deleteStream(scopeName, topic);
+                }
             }
         }
     }
