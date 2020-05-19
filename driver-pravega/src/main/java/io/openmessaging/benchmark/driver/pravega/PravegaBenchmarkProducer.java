@@ -54,12 +54,8 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         ByteBuffer payloadToWrite;
         if (includeTimestampInEvent) {
             // We must create a new buffer for the combined event timestamp and payload.
-            // This requires copying the entire payload.
-            long eventTimestamp = System.currentTimeMillis();
-            payloadToWrite = ByteBuffer.allocate(Long.BYTES + payload.length);
-            payloadToWrite.putLong(eventTimestamp);
-            payloadToWrite.put(payload);
-            payloadToWrite.flip();
+            payloadToWrite = (payload.length <= Long.BYTES) ? ByteBuffer.allocate(Long.BYTES) : ByteBuffer.wrap(payload);
+            payloadToWrite.putLong(System.currentTimeMillis());
         } else {
             payloadToWrite = ByteBuffer.wrap(payload);
         }

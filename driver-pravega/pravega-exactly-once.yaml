@@ -29,6 +29,6 @@ client:
 writer:
   enableConnectionPooling: False
 
-includeTimestampInEvent: False
+includeTimestampInEvent: True
 enableTransaction: True
 eventPerTransaction: 1
