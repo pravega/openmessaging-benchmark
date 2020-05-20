@@ -28,7 +28,6 @@ import io.pravega.client.stream.ReaderConfig;
 import io.pravega.client.stream.ReaderGroupConfig;
 import io.pravega.client.stream.ReinitializationRequiredException;
 import io.pravega.client.stream.Stream;
-import io.pravega.client.stream.impl.ByteBufferSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +42,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkConsumer.class);
 
     private final ExecutorService executor;
-    private final EventStreamReader<ByteBuffer> reader;
+    private final EventStreamReader<byte[]> reader;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
@@ -59,24 +58,24 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         reader = clientFactory.createReader(
                 UUID.randomUUID().toString(),
                 subscriptionName,
-                new ByteBufferSerializer(),
+                new ByteArraySerializer(),
                 ReaderConfig.builder().disableTimeWindows(true).build());
         // Start a thread to read events.
         this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
            while (!closed.get()) {
                try {
-                   final EventRead<ByteBuffer> record = reader.readNextEvent(1000);
-                   final ByteBuffer event = record.getEvent();
+                   final EventRead<byte[]> record = reader.readNextEvent(1000);
+                   final byte[] event = record.getEvent();
                    if (event != null) {
                        long eventTimestamp;
                        if (includeTimestampInEvent) {
-                           eventTimestamp = event.getLong();
+                           eventTimestamp = ByteBuffer.wrap(event).getLong();
                        } else {
                            // This will result in an invalid end-to-end latency measurement of 0 seconds.
                            eventTimestamp = TimeUnit.MICROSECONDS.toMillis(Long.MAX_VALUE);
                        }
-                       consumerCallback.messageReceived(event.array(), eventTimestamp);
+                       consumerCallback.messageReceived(event, eventTimestamp);
                    }
                } catch (ReinitializationRequiredException e) {
                    log.error("Exception during read", e);
