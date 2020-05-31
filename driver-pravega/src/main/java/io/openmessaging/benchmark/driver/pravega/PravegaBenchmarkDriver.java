@@ -33,6 +33,7 @@ import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.StreamConfiguration;
+import io.pravega.common.concurrent.ExecutorServiceHelpers;
 import org.apache.bookkeeper.stats.StatsLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
@@ -55,6 +57,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private StreamManager streamManager;
     private ReaderGroupManager readerGroupManager;
     private EventStreamClientFactory clientFactory;
+    private ExecutorService executorService;
     private final List<String> createdTopics = new ArrayList<>();
 
     @Override
@@ -67,6 +70,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         streamManager = StreamManager.create(clientConfig);
         readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
+        executorService = ExecutorServiceHelpers.newScheduledThreadPool(8, "pravega-readers");
     }
 
     private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
@@ -132,7 +136,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         topic = cleanName(topic);
         subscriptionName = cleanName(subscriptionName);
         BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback,
-                clientFactory, readerGroupManager, config.includeTimestampInEvent);
+                clientFactory, readerGroupManager, config.includeTimestampInEvent, executorService);
         return CompletableFuture.completedFuture(consumer);
     }
 
@@ -161,5 +165,6 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
             deleteTopics();
             streamManager.close();
         }
+        ExecutorServiceHelpers.shutdown(executorService);
     }
 }
