@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -47,7 +48,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
 
     public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
                                     EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager,
-                                    boolean includeTimestampInEvent, ExecutorService executor) {
+                                    boolean includeTimestampInEvent) {
         log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, streamName={}", subscriptionName, streamName);
         // Create reader group if it doesn't already exist.
         final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
@@ -60,8 +61,8 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
                 subscriptionName,
                 new ByteArraySerializer(),
                 ReaderConfig.builder().disableTimeWindows(true).build());
-        // Use the thread pool configured and instantiated in the driver class.
-        this.executor = executor;
+        // Start a thread to read events.
+        this.executor = Executors.newSingleThreadExecutor();
         this.executor.submit(() -> {
            while (!closed.get()) {
                try {
