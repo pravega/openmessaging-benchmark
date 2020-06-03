@@ -66,8 +66,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         this.executor.submit(() -> {
            while (!closed.get()) {
                try {
-                   final EventRead<byte[]> record = reader.readNextEvent(1000);
-                   final byte[] event = record.getEvent();
+                   final byte[] event = reader.readNextEvent(1000).getEvent();
                    if (event != null) {
                        long eventTimestamp;
                        if (includeTimestampInEvent) {
