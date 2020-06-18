@@ -23,4 +23,6 @@ public class PulsarConfig {
     public PulsarClientConfig client;
 
     public PulsarProducerConfig producer;
+
+    public boolean enableTiering = false;
 }

@@ -47,3 +47,6 @@ producer:
   batchingMaxPublishDelayMs: 1
   blockIfQueueFull: true
   pendingQueueSize: 10000
+
+# Enable tiering for the benchmark namespace
+enableTiering: false
