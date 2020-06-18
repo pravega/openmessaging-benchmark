@@ -22,7 +22,7 @@ import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
 import io.pravega.client.stream.EventWriterConfig;
-import io.pravega.client.stream.impl.ByteArraySerializer;
+import io.pravega.client.stream.impl.ByteBufferSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import java.util.concurrent.CompletableFuture;
 public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkProducer.class);
 
-    private final EventStreamWriter<byte[]> writer;
+    private final EventStreamWriter<ByteBuffer> writer;
     private final boolean includeTimestampInEvent;
     private ByteBuffer timestampAndPayload;
 
@@ -43,7 +43,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
         writer = clientFactory.createEventWriter(
                 streamName,
-                new ByteArraySerializer(),
+                new ByteBufferSerializer(),
                 EventWriterConfig.builder()
                         .enableConnectionPooling(enableConnectionPooling)
                         .build());
@@ -59,12 +59,12 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
                 timestampAndPayload.position(0);
             }
             timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
-            return writeEvent(key, timestampAndPayload.array());
+            return writeEvent(key, timestampAndPayload);
         }
-        return writeEvent(key, payload);
+        return writeEvent(key, ByteBuffer.wrap(payload));
     }
 
-    private CompletableFuture<Void> writeEvent(Optional<String> key, byte[] payload) {
+    private CompletableFuture<Void> writeEvent(Optional<String> key, ByteBuffer payload) {
         return (key.isPresent()) ? writer.writeEvent(key.get(), payload) : writer.writeEvent(payload);
     }
 
