@@ -22,7 +22,6 @@ import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
-import io.pravega.client.stream.EventRead;
 import io.pravega.client.stream.EventStreamReader;
 import io.pravega.client.stream.ReaderConfig;
 import io.pravega.client.stream.ReaderGroupConfig;
@@ -66,8 +65,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         this.executor.submit(() -> {
            while (!closed.get()) {
                try {
-                   final EventRead<ByteBuffer> record = reader.readNextEvent(1000);
-                   final ByteBuffer event = record.getEvent();
+                   final ByteBuffer event = reader.readNextEvent(1000).getEvent();
                    if (event != null) {
                        long eventTimestamp;
                        if (includeTimestampInEvent) {

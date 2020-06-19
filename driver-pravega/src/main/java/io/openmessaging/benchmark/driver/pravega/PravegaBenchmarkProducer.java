@@ -35,6 +35,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     private final EventStreamWriter<ByteBuffer> writer;
     private final boolean includeTimestampInEvent;
+    private ByteBuffer timestampAndPayload;
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
@@ -51,23 +52,20 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
-        ByteBuffer payloadToWrite;
         if (includeTimestampInEvent) {
-            // We must create a new buffer for the combined event timestamp and payload.
-            // This requires copying the entire payload.
-            long eventTimestamp = System.currentTimeMillis();
-            payloadToWrite = ByteBuffer.allocate(Long.BYTES + payload.length);
-            payloadToWrite.putLong(eventTimestamp);
-            payloadToWrite.put(payload);
-            payloadToWrite.flip();
-        } else {
-            payloadToWrite = ByteBuffer.wrap(payload);
+            if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
+                timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+            } else {
+                timestampAndPayload.position(0);
+            }
+            timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
+            return writeEvent(key, timestampAndPayload);
         }
-        if (key.isPresent()) {
-            return writer.writeEvent(key.get(), payloadToWrite);
-        } else {
-            return writer.writeEvent(payloadToWrite);
-        }
+        return writeEvent(key, ByteBuffer.wrap(payload));
+    }
+
+    private CompletableFuture<Void> writeEvent(Optional<String> key, ByteBuffer payload) {
+        return (key.isPresent()) ? writer.writeEvent(key.get(), payload) : writer.writeEvent(payload);
     }
 
     @Override
