@@ -63,26 +63,24 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
-            synchronized (this) {
-                if (transaction == null) {
-                    transaction = transactionWriter.beginTxn();
-                }
-                if (includeTimestampInEvent) {
-                    if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
-                        timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
-                    } else {
-                        timestampAndPayload.position(0);
-                    }
-                    timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
-                    writeEvent(key, timestampAndPayload);
+            if (transaction == null) {
+                transaction = transactionWriter.beginTxn();
+            }
+            if (includeTimestampInEvent) {
+                if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
+                    timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
                 } else {
-                    writeEvent(key, ByteBuffer.wrap(payload));
+                    timestampAndPayload.position(0);
                 }
-                if (++eventCount >= eventsPerTransaction) {
-                    eventCount = 0;
-                    transaction.commit();
-                    transaction = null;
-                }
+                timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
+                writeEvent(key, timestampAndPayload);
+            } else {
+                writeEvent(key, ByteBuffer.wrap(payload));
+            }
+            if (++eventCount >= eventsPerTransaction) {
+                eventCount = 0;
+                transaction.commit();
+                transaction = null;
             }
         } catch (TxnFailedException e) {
             throw new RuntimeException("Transaction Write data failed ", e);
