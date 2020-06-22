@@ -28,7 +28,6 @@ import io.pravega.client.stream.TxnFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -47,6 +46,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     private Transaction<ByteBuffer> transaction;
     private final int eventsPerTransaction;
     private int eventCount = 0;
+    private ByteBuffer timestampAndPayload;
 
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
             boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
@@ -62,27 +62,21 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
-        ByteBuffer payloadToWrite;
-        if (includeTimestampInEvent) {
-            // We must create a new buffer for the combined event timestamp and payload.
-            // This requires copying the entire payload.
-            long eventTimestamp = System.currentTimeMillis();
-            payloadToWrite = ByteBuffer.allocate(Long.BYTES + payload.length);
-            payloadToWrite.putLong(eventTimestamp);
-            payloadToWrite.put(payload);
-            payloadToWrite.flip();
-        } else {
-            payloadToWrite = ByteBuffer.wrap(payload);
-        }
         try {
             synchronized (this) {
                 if (transaction == null) {
                     transaction = transactionWriter.beginTxn();
                 }
-                if (key.isPresent()) {
-                    transaction.writeEvent(key.get(), payloadToWrite);
+                if (includeTimestampInEvent) {
+                    if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
+                        timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+                    } else {
+                        timestampAndPayload.position(0);
+                    }
+                    timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
+                    writeEvent(key, timestampAndPayload);
                 } else {
-                    transaction.writeEvent(payloadToWrite);
+                    writeEvent(key, ByteBuffer.wrap(payload));
                 }
                 if (++eventCount >= eventsPerTransaction) {
                     eventCount = 0;
@@ -95,6 +89,14 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         }
         CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
         return future;
+    }
+
+    private void writeEvent(Optional<String> key, ByteBuffer payload) throws TxnFailedException {
+        if (key.isPresent()) {
+            transaction.writeEvent(key.get(), payload);
+        } else {
+            transaction.writeEvent(payload);
+        }
     }
 
     @Override
