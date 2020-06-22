@@ -25,8 +25,8 @@
     - vars.yaml
   tasks:
     - set_fact:
-        AWS_ACCESS_KEY: "{{ lookup('ini', 'aws_access_key_id section=default file=/root/.aws/credentials') }}"
-        AWS_SECRET_KEY: "{{ lookup('ini', 'aws_secret_access_key section=default file=/root/.aws/credentials') }}"
+        AWS_ACCESS_KEY: "{{ lookup('ini', 'aws_access_key_id section=default file=~/.aws/credentials') }}"
+        AWS_SECRET_KEY: "{{ lookup('ini', 'aws_secret_access_key section=default file=~/.aws/credentials') }}"
     - debug: msg="AWS_ACCESS_KEY is {{ AWS_ACCESS_KEY }} "
     - debug: msg="AWS_SECRET_KEY is {{ AWS_SECRET_KEY }} "
 
@@ -86,8 +86,8 @@
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         max_heap_memory: "6g"
         max_direct_memory: "6g"
-        AWS_ACCESS_KEY: {{ AWS_ACCESS_KEY }}
-        AWS_SECRET_KEY: {{ AWS_SECRET_KEY }}
+        AWS_ACCESS_KEY: "{{ AWS_ACCESS_KEY }}"
+        AWS_SECRET_KEY: "{{ AWS_SECRET_KEY }}"
     - template:
         src: "templates/pulsar_env.sh"
         dest: "/opt/pulsar/conf/pulsar_env.sh"
