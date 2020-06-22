@@ -18,9 +18,9 @@
 #
 
 - name: Get common facts
-  hosts: all
-  connection: ssh
-  become: true
+  hosts: localhost
+#  connection: ssh
+#  become: true
   vars_files:
     - vars.yaml
   tasks:
