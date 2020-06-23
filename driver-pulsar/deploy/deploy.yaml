@@ -76,13 +76,13 @@
     - file: path=/opt/pulsar state=directory
     - name: Download Pulsar binary package
       unarchive:
-        src: "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-{{ pulsarVersion }}-bin.tar.gz"
+        src: "https://archive.apache.org/dist/pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-{{ pulsarVersion }}-bin.tar.gz"
         remote_src: yes
         dest: /opt/pulsar
         extra_opts: ["--strip-components=1"]
     - name: Download Pulsar Offloaders binary package
       unarchive:
-        src: "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-offloaders-{{ pulsarVersion }}-bin.tar.gz"
+        src: "https://archive.apache.org/dist/pulsar/pulsar-{{ pulsarVersion }}/apache-pulsar-offloaders-{{ pulsarVersion }}-bin.tar.gz"
         remote_src: yes
         dest: /opt/pulsar
         extra_opts: ["--strip-components=1"]
