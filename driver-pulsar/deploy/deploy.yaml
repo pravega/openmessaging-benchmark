@@ -21,8 +21,6 @@
   hosts: localhost
 #  connection: ssh
 #  become: true
-  vars_files:
-    - vars.yaml
   tasks:
     - set_fact:
         AWS_ACCESS_KEY: "{{ lookup('ini', 'aws_access_key_id section=default file=~/.aws/credentials') }}"
