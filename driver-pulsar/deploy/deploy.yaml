@@ -18,7 +18,7 @@
 #
 
 - name: Get common facts
-  hosts: localhost
+  hosts: all
 #  connection: ssh
 #  become: true
   tasks:
