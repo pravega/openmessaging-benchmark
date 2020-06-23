@@ -19,8 +19,6 @@
 
 - name: Get common facts
   hosts: all
-#  connection: ssh
-#  become: true
   tasks:
     - set_fact:
         AWS_ACCESS_KEY: "{{ lookup('ini', 'aws_access_key_id section=default file=~/.aws/credentials') }}"
