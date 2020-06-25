@@ -132,6 +132,14 @@ public class PulsarBenchmarkDriver implements BenchmarkDriver {
             adminClient.namespaces().setBacklogQuota(namespace,
                             new BacklogQuota(Long.MAX_VALUE, RetentionPolicy.producer_exception));
             adminClient.namespaces().setDeduplicationStatus(namespace, p.deduplicationEnabled);
+
+            // Enable tiering on this namespace. Offloading of data occurs as soon as possible, in the same way as the
+            // deletion of data from Bookkeeper.
+            if (config.enableTiering) {
+                adminClient.namespaces().setOffloadThreshold(this.namespace, 0);
+                adminClient.namespaces().setOffloadDeleteLag(this.namespace, 0, TimeUnit.SECONDS);
+            }
+
             log.info("Applied persistence configuration for namespace {}/{}/{}: {}", tenant, cluster, namespace,
                             writer.writeValueAsString(p));
 
