@@ -79,8 +79,6 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private final RateLimiter rateLimiter = RateLimiter.create(1.0);
     private boolean rateLimiterEnabled = false;
 
-//    private final ExecutorService executor = Executors.newCachedThreadPool(new DefaultThreadFactory("local-worker"));
-//    private final ExecutorService executor = Executors.newFixedThreadPool(16);
     private final ExecutorService executor = new ForkJoinPool();
 
     // stats

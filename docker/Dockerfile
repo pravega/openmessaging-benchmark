@@ -17,26 +17,12 @@
 # under the License.
 #
 
-# Building Container
-
-FROM openjdk:8-jre as Builder
+FROM openjdk:8-jdk
 
 ARG BENCHMARK_TARBALL
 
 ADD ${BENCHMARK_TARBALL} /
 
 RUN mv openmessaging-benchmark-* /benchmark
-
-# Runtime Container
-
-FROM openjdk:8-jre
-
-RUN apt-get update \
-    && apt-get install -y \
-        less \
-        nano \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=Builder /benchmark /benchmark
 
 WORKDIR /benchmark

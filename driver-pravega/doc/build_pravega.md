@@ -10,7 +10,7 @@ git checkout master
 ./gradlew install distTar
 ```
 
-This will build the file `pravega/build/distributions/pravega-0.7.0-2361.f273314-SNAPSHOT.tgz.`
+This will build the file `pravega/build/distributions/pravega-0.8.0.tgz.`
 
 If needed, change the variable `pravegaVersion` in [vars.yaml](../deploy/vars.yaml) to match the version built.
 

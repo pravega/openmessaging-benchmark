@@ -8,7 +8,6 @@ target
 *.svg
 core/*.json
 *.json
-*.log
 *.retry
 *.pem
 **/.terraform
@@ -16,11 +15,7 @@ core/*.json
 **/terraform.tfstate.backup
 **/*.lock.info
 .DS_Store
-logs/
-.ipynb_checkpoints/
 
 # IntelliJ artifacts
 .idea/
 *.iml
-
-/data
