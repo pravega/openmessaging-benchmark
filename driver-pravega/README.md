@@ -54,7 +54,7 @@ With SSH keys in place, you can create the necessary AWS resources using just a 
 ```
 $ cd driver-pravega/deploy
 $ terraform init
-$ terraform apply
+$ echo "yes" | terraform apply
 ```
 This will install the following [EC2](https://aws.amazon.com/ec2) instances (plus some other resources, such as a [Virtual Private Cloud](https://aws.amazon.com/vpc/) (VPC)):
 
@@ -77,12 +77,14 @@ There’s a handful of configurable parameters related to the Terraform deployme
 | `ami` | The [Amazon Machine Image (AWI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) to be used by the cluster’s machines | `ami-9fa343e7` |
 | `instance_types` | The EC2 instance types used by the various components | `i3.4xlarge` (BookKeeper bookies), `m5.large`(Controller), `t2.small` (ZooKeeper), `c4.8xlarge` (benchmarking client) |
 
-If you modify the `public_key_path`, make sure that you point to the appropriate SSH key path when running the [Ansible playbook](#RUNNING_THE_ANSIBLE_PLAYBOOK).
+If you modify the `public_key_path`, make sure that you point to the appropriate SSH key path when running the [Ansible playbook](#_RUNNING_THE_ANSIBLE_PLAYBOOK).
 
 # RUNNING THE ANSIBLE PLAYBOOK
 
 With the appropriate infrastructure in place, you can install and start the Pravega cluster using Ansible with just one command:
 ```
+# Fixes "terraform-inventory had an execution error: Error reading tfstate file: 0.12 format error"
+$ export TF_STATE=./
 $ ansible-playbook \
   --user ec2-user \
   --inventory `which terraform-inventory` \
