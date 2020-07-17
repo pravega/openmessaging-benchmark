@@ -20,6 +20,7 @@ package io.openmessaging.benchmark.worker;
 
 import static java.util.stream.Collectors.toList;
 
+import com.google.common.primitives.Longs;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 import java.io.File;
 import java.io.IOException;
@@ -27,10 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -50,10 +50,8 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.RateLimiter;
 
-import io.netty.util.concurrent.DefaultThreadFactory;
 import io.openmessaging.benchmark.DriverConfiguration;
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.BenchmarkDriver;
@@ -76,8 +74,9 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private List<BenchmarkConsumer> consumers = new ArrayList<>();
 
     private final RateLimiter rateLimiter = RateLimiter.create(1.0);
+    private boolean rateLimiterEnabled = false;
 
-    private final ExecutorService executor = Executors.newCachedThreadPool(new DefaultThreadFactory("local-worker"));
+    private final ExecutorService executor = new ForkJoinPool();
 
     // stats
 
@@ -96,12 +95,14 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private final LongAdder totalMessagesSent = new LongAdder();
     private final LongAdder totalMessagesReceived = new LongAdder();
 
-    private final Recorder publishLatencyRecorder = new Recorder(TimeUnit.SECONDS.toMicros(60), 5);
-    private final Recorder cumulativePublishLatencyRecorder = new Recorder(TimeUnit.SECONDS.toMicros(60), 5);
+    private final long publishLatencyMax = TimeUnit.SECONDS.toMicros(60);
+    private final Recorder publishLatencyRecorder = new Recorder(publishLatencyMax, 5);
+    private final Recorder cumulativePublishLatencyRecorder = new Recorder(publishLatencyMax, 5);
     private final OpStatsLogger publishLatencyStats;
 
-    private final Recorder endToEndLatencyRecorder = new Recorder(TimeUnit.HOURS.toMicros(12), 5);
-    private final Recorder endToEndCumulativeLatencyRecorder = new Recorder(TimeUnit.HOURS.toMicros(12), 5);
+    private final long endToEndLatencyMax = TimeUnit.HOURS.toMicros(12);
+    private final Recorder endToEndLatencyRecorder = new Recorder(endToEndLatencyMax, 5);
+    private final Recorder endToEndCumulativeLatencyRecorder = new Recorder(endToEndLatencyMax, 5);
     private final OpStatsLogger endToEndLatencyStats;
 
     private boolean testCompleted = false;
@@ -188,14 +189,22 @@ public class LocalWorker implements Worker, ConsumerCallback {
 
     @Override
     public void startLoad(ProducerWorkAssignment producerWorkAssignment) {
+        if (producers.size() == 0)
+            return;
         int processors = Runtime.getRuntime().availableProcessors();
+        int producersPerProcessor = (producers.size() + processors - 1) / processors;
+        log.info("producers={}, availableProcessors={}, producersPerProcessor={}", producers.size(), processors, producersPerProcessor);
 
         final Function<BenchmarkProducer, KeyDistributor> assignKeyDistributor = (any) -> KeyDistributor
                 .build(producerWorkAssignment.keyDistributorType);
 
-        rateLimiter.setRate(producerWorkAssignment.publishRate);
+        rateLimiterEnabled = producerWorkAssignment.publishRate != Double.POSITIVE_INFINITY;
+        if (rateLimiterEnabled) {
+            rateLimiter.setRate(producerWorkAssignment.publishRate);
+        }
+        log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
 
-        Lists.partition(producers, processors).stream()
+        Lists.partition(producers, producersPerProcessor).stream()
                 .map(producersPerThread -> producersPerThread.stream()
                         .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
                 .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor,
@@ -211,10 +220,13 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private void submitProducersToExecutor(Map<BenchmarkProducer, KeyDistributor> producersWithKeyDistributor,
             byte[] payloadData) {
         executor.submit(() -> {
+            log.info("submitProducersToExecutor: # producers={}", producersWithKeyDistributor.size());
             try {
                 while (!testCompleted) {
                     producersWithKeyDistributor.forEach((producer, producersKeyDistributor) -> {
-                        rateLimiter.acquire();
+                        if (rateLimiterEnabled) {
+                            rateLimiter.acquire();
+                        }
                         final long sendTime = System.nanoTime();
                         producer.sendAsync(Optional.ofNullable(producersKeyDistributor.next()), payloadData)
                                 .thenRun(() -> {
@@ -224,7 +236,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
                             bytesSent.add(payloadData.length);
                             bytesSentCounter.add(payloadData.length);
 
-                            long latencyMicros = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - sendTime);
+                            long latencyMicros = Longs.constrainToRange(TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - sendTime), 0, publishLatencyMax);
                             publishLatencyRecorder.recordValue(latencyMicros);
                             cumulativePublishLatencyRecorder.recordValue(latencyMicros);
                             publishLatencyStats.registerSuccessfulEvent(latencyMicros, TimeUnit.MICROSECONDS);
@@ -292,7 +304,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
         bytesReceivedCounter.add(data.length);
 
         long now = System.currentTimeMillis();
-        long endToEndLatencyMicros = TimeUnit.MILLISECONDS.toMicros(now - publishTimestamp);
+        long endToEndLatencyMicros = Longs.constrainToRange(TimeUnit.MILLISECONDS.toMicros(now - publishTimestamp), 0, endToEndLatencyMax);
         if (endToEndLatencyMicros > 0) {
             endToEndCumulativeLatencyRecorder.recordValue(endToEndLatencyMicros);
             endToEndLatencyRecorder.recordValue(endToEndLatencyMicros);
@@ -346,16 +358,25 @@ public class LocalWorker implements Worker, ConsumerCallback {
         totalMessagesReceived.reset();
 
         try {
-            Thread.sleep(100);
+            // TODO: Must wait for all tasks in executor to complete. For now, sleep a while.
+            Thread.sleep(5000);
 
-            for (BenchmarkProducer producer : producers) {
-                producer.close();
-            }
+            producers.parallelStream().forEach((BenchmarkProducer benchmarkProducer) -> {
+                try {
+                    benchmarkProducer.close();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
             producers.clear();
 
-            for (BenchmarkConsumer consumer : consumers) {
-                consumer.close();
-            }
+            consumers.parallelStream().forEach((BenchmarkConsumer benchmarkConsumer) -> {
+                try {
+                    benchmarkConsumer.close();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
             consumers.clear();
 
             if (benchmarkDriver != null) {

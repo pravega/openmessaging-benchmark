@@ -18,7 +18,7 @@
 #
 
 numWorkers: 8
-image: openmessaging/openmessaging-benchmark:latest
+image: pravega/openmessaging-benchmark:latest
 imagePullPolicy: Always
 workload: workloads/1-topic-16-partitions-1kb.yaml
 driver: driver-pulsar/pulsar.yaml

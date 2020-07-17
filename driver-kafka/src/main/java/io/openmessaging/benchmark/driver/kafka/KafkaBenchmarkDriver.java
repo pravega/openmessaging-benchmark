@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.UUID;
 
 import org.apache.bookkeeper.stats.StatsLogger;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -64,6 +65,8 @@ public class KafkaBenchmarkDriver implements BenchmarkDriver {
     private Properties consumerProperties;
 
     private AdminClient admin;
+    private boolean enableTransaction;
+    private int eventsPerTransaction;
 
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
@@ -77,6 +80,11 @@ public class KafkaBenchmarkDriver implements BenchmarkDriver {
         producerProperties.load(new StringReader(config.producerConfig));
         producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        if (Boolean.parseBoolean(producerProperties.getProperty("enableTransaction"))) {
+            this.enableTransaction = true;
+            producerProperties.put("transactional.id", UUID.randomUUID().toString());
+            this.eventsPerTransaction = Integer.parseInt(producerProperties.getProperty("eventsPerTransaction", "100"));
+        }
 
         consumerProperties = new Properties();
         commonProperties.forEach((key, value) -> consumerProperties.put(key, value));
@@ -113,6 +121,10 @@ public class KafkaBenchmarkDriver implements BenchmarkDriver {
 
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
+        if (this.enableTransaction) {
+            return CompletableFuture
+                    .completedFuture(new KafkaBenchmarkTransactionProducer(producer, topic, eventsPerTransaction));
+        }
         return CompletableFuture.completedFuture(new KafkaBenchmarkProducer(producer, topic));
     }
 

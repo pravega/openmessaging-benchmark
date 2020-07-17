@@ -25,17 +25,19 @@ metadata:
     app: {{ .Release.Name }}
     role: driver
 spec:
+  serviceAccount: {{ .Release.Namespace }}-pravega
+  nodeSelector:
+    kubernetes.io/hostname: 10.0.9.7
   containers:
     - name: {{ .Release.Name }}-driver
       imagePullPolicy: {{ .Values.imagePullPolicy }}
       image: {{ .Values.image }}
       env:
-        - name: NUM_WORKERS
-          value: "{{ .Values.numWorkers }}"
-        - name: WORKERS
-          value: '{{ template "workers" .Values }}'
+        - name: pravega_client_auth_method
+          value: Bearer
+        - name: pravega_client_auth_loadDynamic
+          value: "true"
       command: ["sh", "-c"]
       args:
         - >
-          echo "bin/benchmark --drivers {{ .Values.driver }} --workers $WORKERS {{ .Values.workload }}" > example-run.sh &&
-          tail -f /dev/null
+          sleep infinity

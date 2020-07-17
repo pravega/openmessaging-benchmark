@@ -26,7 +26,7 @@ Configuration:
       name: Console
       target: SYSTEM_OUT
       PatternLayout:
-        Pattern: "%d{HH:mm:ss.SSS} [%t] %-4level - %msg%n"
+        Pattern: "%d{HH:mm:ss.SSS} [%t] %-4level %c - %msg%n"
         
   Loggers: 
     Root:
