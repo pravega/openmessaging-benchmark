@@ -63,7 +63,7 @@ This will install the following [EC2](https://aws.amazon.com/ec2) instances (plu
 | Controller instances| The VMs on which a Pravega controller will run | 1 |
 | Bookkeeper instances | The VMs on which a Bookkeeper and Segmentstore will run | 3 |
 | ZooKeeper instances | The VMs on which a ZooKeeper node will run | 3 |
-| Client instance | The VM from which the benchmarking suite itself will be run | 4 |
+| Client instance | The VM from which the benchmarking suite itself will be run | 2 |
 
 When you run `terraform apply`, you will be prompted to type `yes`. Type `yes` to continue with the installation or anything else to quit.
 
@@ -75,7 +75,7 @@ There’s a handful of configurable parameters related to the Terraform deployme
 | `region` | The AWS region in which the Pravega cluster will be deployed | `us-west-2` |
 | `public_key_path` | The path to the SSH public key that you’ve generated | `~/.ssh/pravega_aws.pub` |
 | `ami` | The [Amazon Machine Image (AWI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) to be used by the cluster’s machines | `ami-9fa343e7` |
-| `instance_types` | The EC2 instance types used by the various components | `i3.4xlarge` (BookKeeper bookies), `m5.large`(Controller), `t2.small` (ZooKeeper), `c4.8xlarge` (benchmarking client) |
+| `instance_types` | The EC2 instance types used by the various components | `i3.4xlarge` (BookKeeper bookies), `m5.large`(Controller), `t3.small` (ZooKeeper), `c5.4xlarge` (benchmarking client) |
 
 If you modify the `public_key_path`, make sure that you point to the appropriate SSH key path when running the [Ansible playbook](#_RUNNING_THE_ANSIBLE_PLAYBOOK).
 
