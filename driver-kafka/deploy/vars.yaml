@@ -1,0 +1,6 @@
+---
+kafkaVersion: "2.4.0"
+
+zookeeperVersion: "3.5.5"
+prometheusVersion: "2.2.1"
+

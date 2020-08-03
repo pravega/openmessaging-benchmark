@@ -1,0 +1,8 @@
+---
+#pulsarVersion: "2.5.1"
+pulsarVersion: "2.4.2"
+
+zookeeperVersion: "3.5.5"
+bookkeeperVersion: "4.9.2"
+prometheusVersion: "2.2.1"
+
