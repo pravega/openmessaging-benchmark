@@ -29,6 +29,12 @@
     </parent>
     <artifactId>driver-pravega</artifactId>
 
+    <properties>
+        <!--Specify pravegaVersion in properties or use default: 0.7.1-->
+        <!--Provide Pravega version for build: mvn clean install  "-DpravegaVersion=0.8.0-2508.30406cf-SNAPSHOT" -DskipTests=true -->
+        <pravegaVersion>0.7.1</pravegaVersion>
+    </properties>
+
     <repositories>
         <repository>
             <id>jfrog</id>
@@ -50,7 +56,7 @@
         <dependency>
             <groupId>io.pravega</groupId>
             <artifactId>pravega-client</artifactId>
-            <version>0.7.1</version>
+            <version>${pravegaVersion}</version>
         </dependency>
 
         <dependency>
