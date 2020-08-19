@@ -143,10 +143,10 @@ public class WorkloadGenerator implements AutoCloseable {
         if (workload.schemaFile == null) {
             worker.probeProducers();
         } else { // todo fix for generic schema
-            User user = new User();
-            user.setName("name");
-            user.setUserId("testId");
-            worker.probeProducers(user);
+//            User user = new User();
+//            user.setName("name");
+//            user.setUserId("testId");
+//            worker.probeProducers(user);
         }
 
         while (true) {
