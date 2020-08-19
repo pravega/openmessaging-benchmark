@@ -16,6 +16,6 @@ public class User {
     @Getter
     private Address address;
     @Getter
-    private int age;
+    private String userId;
 
 }

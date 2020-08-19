@@ -41,6 +41,10 @@ public interface Worker extends AutoCloseable {
 
     void probeProducers() throws IOException;
 
+    default void probeProducers(Object event) throws IOException {
+        throw new UnsupportedOperationException("Schema registry not supported for this driver");
+    }
+
     void startLoad(ProducerWorkAssignment producerWorkAssignment) throws IOException;
 
     void adjustPublishRate(double publishRate) throws IOException;

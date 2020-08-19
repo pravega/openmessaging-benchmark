@@ -4,7 +4,7 @@
   "name": "user",
   "fields": [
     {
-      "name": "user_id",
+      "name": "userId",
       "type": "string"
     },
     {

@@ -19,6 +19,7 @@
 package io.openmessaging.benchmark;
 
 import com.google.common.math.Stats;
+import io.openmessaging.benchmark.driver.pravega.testobj.User;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
@@ -78,7 +79,7 @@ public class WorkloadGenerator implements AutoCloseable {
 
         createConsumers(topics);
         createProducers(topics);
-
+        // todo check for schema registry
         ensureTopicsAreReady();
 
         if (workload.producerRate == -1 || workload.producerRate >= Integer.MAX_VALUE) {
@@ -139,7 +140,14 @@ public class WorkloadGenerator implements AutoCloseable {
         int expectedMessages = workload.topics * workload.subscriptionsPerTopic;
 
         // In this case we just publish 1 message and then wait for consumers to receive the data
-        worker.probeProducers();
+        if (workload.schemaFile == null) {
+            worker.probeProducers();
+        } else { // todo fix for generic schema
+            User user = new User();
+            user.setName("name");
+            user.setUserId("testId");
+            worker.probeProducers(user);
+        }
 
         while (true) {
             CountersStats stats = worker.getCountersStats();
