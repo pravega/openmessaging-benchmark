@@ -24,6 +24,7 @@ public class PravegaConfig {
 
     public PravegaClientConfig client;
     public PravegaWriterConfig writer;
+    public SchemaRegistryConfig schemaRegistry;
 
     // includeTimestampInEvent must be true to measure end-to-end latency.
     public boolean includeTimestampInEvent = true;
@@ -44,4 +45,6 @@ public class PravegaConfig {
     // By default, streams created for benchmarking will be deleted at the end of the test.
     // Set to false to keep the streams.
     public boolean deleteStreams = true;
+
+    public boolean enableSchemaRegistry = false;
 }

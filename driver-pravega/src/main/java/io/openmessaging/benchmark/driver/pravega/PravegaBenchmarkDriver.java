@@ -27,19 +27,30 @@ import io.openmessaging.benchmark.driver.BenchmarkDriver;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
+import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
+import io.openmessaging.benchmark.driver.pravega.testobj.User;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.ScalingPolicy;
+import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
+import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
+import io.pravega.schemaregistry.serializer.shared.impl.SerializerConfig;
+import io.pravega.schemaregistry.serializers.SerializerFactory;
+import org.apache.avro.Schema;
+import io.pravega.schemaregistry.serializer.avro.schemas.AvroSchema;
 import org.apache.bookkeeper.stats.StatsLogger;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +62,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     private PravegaConfig config;
     private ClientConfig clientConfig;
+    private Serializer<Object> serializer, deserializer;
     private String scopeName;
     private StreamManager streamManager;
     private ReaderGroupManager readerGroupManager;
@@ -61,7 +73,9 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
         config = readConfig(configurationFile);
         log.info("Pravega driver configuration: {}", objectWriter.writeValueAsString(config));
-
+        if (config.enableSchemaRegistry) {
+            Assert.assertNotNull("If enableSchemaRegistry is True, schemaRegistry config is required.", config.schemaRegistry);
+        }
         clientConfig = ClientConfig.builder().controllerURI(URI.create(config.client.controllerURI)).build();
         scopeName = config.client.scopeName;
         streamManager = StreamManager.create(clientConfig);
@@ -98,6 +112,37 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         if (config.createScope) {
             streamManager.createScope(scopeName);
         }
+        if (config.enableSchemaRegistry) {
+            SchemaRegistryConfig schemaRegistryConfig = config.schemaRegistry;
+            log.info("schemaRegistryConfig: {}", schemaRegistryConfig); // todo remove
+            SchemaRegistryClientConfig config = null;
+            // create serializer and deserializer
+            try {
+                config = SchemaRegistryClientConfig.builder()
+                        .schemaRegistryUri(new URI(schemaRegistryConfig.schemaRegistryURI)).build();
+            } catch (URISyntaxException e) {
+                log.error("schemaRegistryURI {} is invalid.", schemaRegistryConfig.schemaRegistryURI, e);
+                // todo throw
+            }
+
+            SerializerConfig serializerConfig = SerializerConfig.builder()
+                    .groupId(schemaRegistryConfig.groupId).registryConfig(config)
+                    .createGroup(SerializationFormat.Avro).registerSchema(true)
+                    .build();
+            AvroSchema schema = null;
+            try {
+                schema = AvroSchema.of(new Schema.Parser().parse(new File(schemaRegistryConfig.schemaFile)));
+            } catch (IOException e) {
+                log.error("Schema {} is invalid.", schemaRegistryConfig.schemaFile, e);
+                // todo throw
+            }
+
+            serializer = SerializerFactory
+                    .avroSerializer(serializerConfig, schema);
+
+            deserializer = SerializerFactory.avroDeserializer(
+                    serializerConfig, schema);
+        }
         ScalingPolicy scalingPolicy;
         // Create a fixed or auto-scaling Stream based on user configuration.
         if (config.enableStreamAutoScaling && (config.eventsPerSecond != PravegaConfig.DEFAULT_STREAM_AUTOSCALING_VALUE ||
@@ -115,13 +160,18 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
         topic = cleanName(topic);
-        BenchmarkProducer producer = null;
-        if (config.enableTransaction) {
+        BenchmarkProducer producer;
+        if (config.enableTransaction) { // todo schema
             producer = new PravegaBenchmarkTransactionProducer(topic, clientFactory, config.includeTimestampInEvent,
                     config.writer.enableConnectionPooling, config.eventsPerTransaction);
         } else {
-            producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
-                    config.writer.enableConnectionPooling);
+            if (config.enableSchemaRegistry) {
+                producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
+                        config.writer.enableConnectionPooling, serializer, deserializer);
+            } else {
+                producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
+                        config.writer.enableConnectionPooling);
+            }
         }
         return CompletableFuture.completedFuture(producer);
     }
@@ -131,8 +181,14 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
             ConsumerCallback consumerCallback) {
         topic = cleanName(topic);
         subscriptionName = cleanName(subscriptionName);
-        BenchmarkConsumer consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback,
-                clientFactory, readerGroupManager, config.includeTimestampInEvent);
+        BenchmarkConsumer consumer;
+        if (config.enableSchemaRegistry) {
+            consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback,
+                    clientFactory, readerGroupManager, config.includeTimestampInEvent, serializer, deserializer);
+        } else {
+            consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback,
+                    clientFactory, readerGroupManager, config.includeTimestampInEvent);
+        }
         return CompletableFuture.completedFuture(consumer);
     }
 

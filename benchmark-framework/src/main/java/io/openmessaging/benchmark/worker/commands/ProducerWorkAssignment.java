@@ -20,9 +20,14 @@ package io.openmessaging.benchmark.worker.commands;
 
 import io.openmessaging.benchmark.utils.distributor.KeyDistributorType;
 
+// TODO use instead workload
 public class ProducerWorkAssignment {
-    
-    public byte[] payloadData;
+
+    public String payloadFile;
+
+    public String schemaFile;
+
+    public int messageSize;
     
     public double publishRate;
 

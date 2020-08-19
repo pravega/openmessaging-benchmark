@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "namespace": "io.openmessaging.benchmark",
+  "name": "user",
+  "fields": [
+    {
+      "name": "user_id",
+      "type": "string"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "eventTimestamp",
+      "type": "long"
+    },
+    {
+      "name": "address",
+      "type": {
+        "name" : "address_entry",
+        "type" : "record",
+        "fields": [
+          {
+            "name": "streetAddress",
+            "type": "string"
+          },
+          {
+            "name": "city",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -34,4 +34,8 @@ public interface BenchmarkProducer extends AutoCloseable {
      */
     CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload);
 
+    //todo javadoc + replace Object with class with timestamp
+    default CompletableFuture<Void> sendAsync(Optional<String> key, Object payload) {
+        throw new UnsupportedOperationException("Schema registry not supported yet for this driver");
+    }
 }

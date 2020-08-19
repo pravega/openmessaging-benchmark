@@ -22,8 +22,8 @@ import static java.util.stream.Collectors.toList;
 
 import com.google.common.primitives.Longs;
 import io.openmessaging.benchmark.utils.RandomGenerator;
-import java.io.File;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +36,14 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.openmessaging.benchmark.utils.payload.FilePayloadReader;
+import io.openmessaging.benchmark.utils.payload.PayloadReader;
+import io.openmessaging.benchmark.worker.commands.*;
 import org.HdrHistogram.Recorder;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.io.DatumReader;
+import org.apache.avro.io.DecoderFactory;
 import org.apache.bookkeeper.stats.Counter;
 import org.apache.bookkeeper.stats.NullStatsLogger;
 import org.apache.bookkeeper.stats.OpStatsLogger;
@@ -59,12 +66,6 @@ import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.openmessaging.benchmark.utils.Timer;
 import io.openmessaging.benchmark.utils.distributor.KeyDistributor;
-import io.openmessaging.benchmark.worker.commands.ConsumerAssignment;
-import io.openmessaging.benchmark.worker.commands.CountersStats;
-import io.openmessaging.benchmark.worker.commands.CumulativeLatencies;
-import io.openmessaging.benchmark.worker.commands.PeriodStats;
-import io.openmessaging.benchmark.worker.commands.ProducerWorkAssignment;
-import io.openmessaging.benchmark.worker.commands.TopicsInfo;
 
 public class LocalWorker implements Worker, ConsumerCallback {
 
@@ -188,7 +189,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
     }
 
     @Override
-    public void startLoad(ProducerWorkAssignment producerWorkAssignment) {
+    public void startLoad(final ProducerWorkAssignment producerWorkAssignment) throws IOException {
         if (producers.size() == 0)
             return;
         int processors = Runtime.getRuntime().availableProcessors();
@@ -204,11 +205,55 @@ public class LocalWorker implements Worker, ConsumerCallback {
         }
         log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
 
+        if (producerWorkAssignment.schemaFile != null) {
+            Schema schema = new Schema.Parser().parse(new File(producerWorkAssignment.schemaFile));
+            //todo Files.probeContentType
+            BufferedInputStream stream = new BufferedInputStream(new FileInputStream(producerWorkAssignment.payloadFile));
+            Object payload;
+            try {
+                payload = jsonToAvro(stream, schema);
+            } catch (Exception e) {
+                log.error("Error encountered while converting json to avro of message [{}]", producerWorkAssignment.payloadFile, e);
+                throw new IOException("Error encountered while converting json to avro of message");
+            } finally {
+                stream.close();
+            }
+
+            Lists.partition(producers, producersPerProcessor).stream()
+                    .map(producersPerThread -> producersPerThread.stream()
+                            .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
+                    .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor,
+                            payload));
+
+        } else {
+            final PayloadReader payloadReader = new FilePayloadReader(producerWorkAssignment.messageSize);
+            byte[] payload = payloadReader.load(producerWorkAssignment.payloadFile);
+
+            Lists.partition(producers, producersPerProcessor).stream()
+                    .map(producersPerThread -> producersPerThread.stream()
+                            .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
+                    .forEach(producersWithKeyDistributor -> submitProducersToExecutorWithBytePayload(producersWithKeyDistributor,
+                            payload));
+        }
+
+
+
         Lists.partition(producers, producersPerProcessor).stream()
                 .map(producersPerThread -> producersPerThread.stream()
                         .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
                 .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor,
-                        producerWorkAssignment.payloadData));
+                        producerWorkAssignment));
+    }
+
+    // TODO need to calculate size of payload
+    private Object jsonToAvro(InputStream stream, Schema schema) throws Exception {
+        DatumReader<Object> reader = new GenericDatumReader<>(schema);
+        Object object = reader.read(null, DecoderFactory.get().jsonDecoder(schema, stream));
+
+        if (schema.getType().equals(Schema.Type.STRING)) {
+            object = object.toString();
+        }
+        return object;
     }
 
     @Override
@@ -218,7 +263,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
     }
 
     private void submitProducersToExecutor(Map<BenchmarkProducer, KeyDistributor> producersWithKeyDistributor,
-            byte[] payloadData) {
+           Object payloadData) {
         executor.submit(() -> {
             log.info("submitProducersToExecutor: # producers={}", producersWithKeyDistributor.size());
             try {
@@ -233,14 +278,50 @@ public class LocalWorker implements Worker, ConsumerCallback {
                             messagesSent.increment();
                             totalMessagesSent.increment();
                             messagesSentCounter.inc();
-                            bytesSent.add(payloadData.length);
-                            bytesSentCounter.add(payloadData.length);
+                            // todo need serializer
+                            bytesSent.add(100);
+                            bytesSentCounter.add(100);
 
                             long latencyMicros = Longs.constrainToRange(TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - sendTime), 0, publishLatencyMax);
                             publishLatencyRecorder.recordValue(latencyMicros);
                             cumulativePublishLatencyRecorder.recordValue(latencyMicros);
                             publishLatencyStats.registerSuccessfulEvent(latencyMicros, TimeUnit.MICROSECONDS);
                         }).exceptionally(ex -> {
+                            log.warn("Write error on message", ex);
+                            return null;
+                        });
+                    });
+                }
+            } catch (Throwable t) {
+                log.error("Got error", t);
+            }
+        });
+    }
+
+    private void submitProducersToExecutorWithBytePayload(Map<BenchmarkProducer, KeyDistributor> producersWithKeyDistributor,
+                                           byte[] payloadData) {
+        executor.submit(() -> {
+            log.info("submitProducersToExecutor: # producers={}", producersWithKeyDistributor.size());
+            try {
+                while (!testCompleted) {
+                    producersWithKeyDistributor.forEach((producer, producersKeyDistributor) -> {
+                        if (rateLimiterEnabled) {
+                            rateLimiter.acquire();
+                        }
+                        final long sendTime = System.nanoTime();
+                        producer.sendAsync(Optional.ofNullable(producersKeyDistributor.next()), payloadData)
+                                .thenRun(() -> {
+                                    messagesSent.increment();
+                                    totalMessagesSent.increment();
+                                    messagesSentCounter.inc();
+                                    bytesSent.add(payloadData.length);
+                                    bytesSentCounter.add(payloadData.length);
+
+                                    long latencyMicros = Longs.constrainToRange(TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - sendTime), 0, publishLatencyMax);
+                                    publishLatencyRecorder.recordValue(latencyMicros);
+                                    cumulativePublishLatencyRecorder.recordValue(latencyMicros);
+                                    publishLatencyStats.registerSuccessfulEvent(latencyMicros, TimeUnit.MICROSECONDS);
+                                }).exceptionally(ex -> {
                             log.warn("Write error on message", ex);
                             return null;
                         });
@@ -296,12 +377,12 @@ public class LocalWorker implements Worker, ConsumerCallback {
     }
 
     @Override
-    public void messageReceived(byte[] data, long publishTimestamp) {
+    public void messageSizeReceived(int dataLength, long publishTimestamp) {
         messagesReceived.increment();
         totalMessagesReceived.increment();
         messagesReceivedCounter.inc();
-        bytesReceived.add(data.length);
-        bytesReceivedCounter.add(data.length);
+        bytesReceived.add(dataLength);
+        bytesReceivedCounter.add(dataLength);
 
         long now = System.currentTimeMillis();
         long endToEndLatencyMicros = Longs.constrainToRange(TimeUnit.MILLISECONDS.toMicros(now - publishTimestamp), 0, endToEndLatencyMax);
@@ -318,6 +399,12 @@ public class LocalWorker implements Worker, ConsumerCallback {
                 e.printStackTrace();
             }
         }
+    }
+
+    // TODO get payload byte[]
+    @Override
+    public void messageReceived(byte[] data, long publishTimestamp) {
+        this.messageSizeReceived(data.length, publishTimestamp);
     }
 
     @Override

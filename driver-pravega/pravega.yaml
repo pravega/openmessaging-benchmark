@@ -32,3 +32,13 @@ writer:
 includeTimestampInEvent: True
 enableStreamAutoScaling: False
 eventsPerSecond: 10000
+
+# TODO: remove
+#enableSchemaRegistry: True
+#schemaRegistry:
+#  schemaRegistryURI: http://10.233.29.169:9092
+#  groupId:
+#  version:
+#    type:
+#    version:
+#    id:

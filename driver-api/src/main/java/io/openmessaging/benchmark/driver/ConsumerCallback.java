@@ -31,4 +31,13 @@ public interface ConsumerCallback {
      *            the publish timestamp in milliseconds
      */
     void messageReceived(byte[] payload, long publishTimestamp);
+    /**
+     * Driver should invoke this method once for each message received
+     *
+     * @param payload
+     *            the received message payload length
+     * @param publishTimestamp
+     *            the publish timestamp in milliseconds
+     */
+    void messageSizeReceived(int payload, long publishTimestamp);
 }

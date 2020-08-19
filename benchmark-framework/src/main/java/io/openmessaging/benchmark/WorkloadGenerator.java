@@ -20,7 +20,10 @@ package io.openmessaging.benchmark;
 
 import com.google.common.math.Stats;
 import io.openmessaging.benchmark.utils.RandomGenerator;
-import java.io.IOException;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +32,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import io.openmessaging.benchmark.worker.commands.*;
+import org.apache.avro.io.DatumReader;
+import org.apache.avro.io.DecoderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +44,8 @@ import io.openmessaging.benchmark.utils.Timer;
 import io.openmessaging.benchmark.utils.payload.FilePayloadReader;
 import io.openmessaging.benchmark.utils.payload.PayloadReader;
 import io.openmessaging.benchmark.worker.Worker;
-import io.openmessaging.benchmark.worker.commands.ConsumerAssignment;
-import io.openmessaging.benchmark.worker.commands.CountersStats;
-import io.openmessaging.benchmark.worker.commands.CumulativeLatencies;
-import io.openmessaging.benchmark.worker.commands.PeriodStats;
-import io.openmessaging.benchmark.worker.commands.ProducerWorkAssignment;
-import io.openmessaging.benchmark.worker.commands.TopicSubscription;
-import io.openmessaging.benchmark.worker.commands.TopicsInfo;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericDatumReader;
 
 public class WorkloadGenerator implements AutoCloseable {
 
@@ -98,13 +99,11 @@ public class WorkloadGenerator implements AutoCloseable {
                 }
             });
         }
-
-        final PayloadReader payloadReader = new FilePayloadReader(workload.messageSize);
-
         ProducerWorkAssignment producerWorkAssignment = new ProducerWorkAssignment();
+        producerWorkAssignment.payloadFile = workload.payloadFile;
+        producerWorkAssignment.schemaFile = workload.schemaFile;
         producerWorkAssignment.keyDistributorType = workload.keyDistributor;
         producerWorkAssignment.publishRate = targetPublishRate;
-        producerWorkAssignment.payloadData = payloadReader.load(workload.payloadFile);
 
         log.info("----- Starting warm-up traffic ------");
 

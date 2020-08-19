@@ -29,6 +29,13 @@
     </parent>
     <artifactId>driver-pravega</artifactId>
 
+    <properties>
+        <!--Specify pravegaVersion in properties or use default: 0.7.1-->
+        <!--Provide Pravega version for build: mvn clean install  "-DpravegaVersion=0.8.0-2623.279ac21-SNAPSHOT" -DskipTests=true -Dlicense.skip=true-->
+        <pravegaVersion>0.8.0-2623.279ac21-SNAPSHOT</pravegaVersion>
+        <schemaRegisryVersion>0.1.0-27.6284faf-SNAPSHOT</schemaRegisryVersion>
+    </properties>
+
     <repositories>
         <repository>
             <id>jfrog</id>
@@ -37,6 +44,12 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
+        </repository>
+        <!-- TODO schema registry -->
+        <!-- Cannot resolve com.github.everit-org.json-schema:org.everit.json.schema:1.12.1 -->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
@@ -50,8 +63,42 @@
         <dependency>
             <groupId>io.pravega</groupId>
             <artifactId>pravega-client</artifactId>
-            <version>0.7.1</version>
+            <version>${pravegaVersion}</version>
         </dependency>
+
+        <!-- schema-registry start -->
+        <dependency>
+            <groupId>io.pravega.schemaregistry</groupId>
+            <artifactId>client</artifactId>
+            <version>${schemaRegisryVersion}</version>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>io.pravega</groupId>-->
+<!--            <artifactId>pravega-shared-authplugin</artifactId>-->
+<!--            <version>${pravegaVersion}</version>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>io.pravega.schemaregistry</groupId>
+            <artifactId>serializers</artifactId>
+            <version>${schemaRegisryVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.everit-org.json-schema</groupId>
+            <artifactId>org.everit.json.schema</artifactId>
+            <version>1.12.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.12</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- schema-registry end -->
 
         <dependency>
             <groupId>io.pravega</groupId>
