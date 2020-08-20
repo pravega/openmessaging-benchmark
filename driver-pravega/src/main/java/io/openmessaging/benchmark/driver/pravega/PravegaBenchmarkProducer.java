@@ -25,6 +25,7 @@ import io.pravega.client.stream.EventStreamWriter;
 import io.pravega.client.stream.EventWriterConfig;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.impl.ByteBufferSerializer;
+import org.apache.avro.generic.GenericData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
@@ -81,15 +82,15 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, Object payload) {
-        User user = (User) payload; // TODO fix for abstract object
+        //GenericData genericData = (GenericData) payload; // TODO fix for abstract object
         if (includeTimestampInEvent) {
-            user.setEventTimestamp(System.currentTimeMillis());
-            return writeObjectEvent(key, user);
+//            record.setEventTimestamp(System.currentTimeMillis());
+//            return writeObjectEvent(key, user);
         }
-        return writeObjectEvent(key, user);
+        return writeObjectEvent(key, payload);
     }
 
-    private CompletableFuture<Void> writeObjectEvent(Optional<String> key, User payload) {
+    private CompletableFuture<Void> writeObjectEvent(Optional<String> key, Object payload) {
         return (key.isPresent()) ? writer.writeEvent(key.get(), payload) : writer.writeEvent(payload);
     }
 
