@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "namespace": "io.openmessaging.benchmark",
-  "name": "user",
+  "namespace": "io.openmessaging.benchmark.driver.pravega.testobj",
+  "name": "User",
   "fields": [
     {
       "name": "userId",
