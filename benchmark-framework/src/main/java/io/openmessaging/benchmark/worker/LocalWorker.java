@@ -258,6 +258,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
 
     @Override
     public void probeProducers() throws IOException {
+        //todo uncomment
         producers.forEach(
                 producer -> producer.sendAsync(Optional.of("key"), new byte[10]).thenRun(() -> totalMessagesSent.increment()));
     }

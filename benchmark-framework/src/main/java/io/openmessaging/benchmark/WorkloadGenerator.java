@@ -80,7 +80,10 @@ public class WorkloadGenerator implements AutoCloseable {
         createConsumers(topics);
         createProducers(topics);
         // todo check for schema registry
-        ensureTopicsAreReady();
+        if (workload.schemaFile == null) {
+            log.info("Ensure topics are ready");
+            ensureTopicsAreReady();
+        }
 
         if (workload.producerRate == -1 || workload.producerRate >= Integer.MAX_VALUE) {
             // This will disable the rate limiter.
