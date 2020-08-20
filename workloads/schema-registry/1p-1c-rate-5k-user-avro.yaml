@@ -1,0 +1,14 @@
+name: 1 topic 1 partition object user schema avro
+
+topics: 1
+partitionsPerTopic: 1
+keyDistributor: "NO_KEY"
+messageSize: 100
+payloadFile: "workloads/schema-registry/user.json"
+schemaFile: "workloads/schema-registry/user.avsc"
+subscriptionsPerTopic: 1
+consumerPerSubscription: 1
+producersPerTopic: 1
+producerRate: 5000
+consumerBacklogSizeGB: 0
+testDurationMinutes: 1
