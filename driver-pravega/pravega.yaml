@@ -37,8 +37,8 @@ enableSchemaRegistry: True
 schemaRegistry:
   schemaRegistryURI: http://10.233.32.183:9092
   schemaFile: "workloads/schema-registry/user.avsc"
-  groupId: avrouser2
+  groupId: avrouser1
   version:
     type: User
-    version: 2
-    id: 2
+    version: 0
+    id: 0
