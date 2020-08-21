@@ -14,6 +14,8 @@ public class User {
     @Getter
     private String name;
     @Getter
+    private String biography;
+    @Getter
     private Address address;
     @Getter
     private String userId;

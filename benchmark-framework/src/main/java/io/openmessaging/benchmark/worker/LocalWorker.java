@@ -208,17 +208,19 @@ public class LocalWorker implements Worker, ConsumerCallback {
 
         if (producerWorkAssignment.schemaFile != null) {
             User user = new User();
-            user.setName("name");
-            user.setUserId("testId");
+            user.setName("Greg Egan");
+            user.setUserId("3994715614");
+            user.setBiography("Greg Egan (born 20 August 1961) is an Australian science fiction writer and amateur mathematician, best known for his works of hard science fiction.");
             Address address = new Address();
             address.setCity("Perth");
-            address.setStreetAddress("4/19 Garden Road");
+            address.setStreetAddress("4/19 Garden Road, Scarborough, WA, Australia");
+            address.setPostalCode("5321");
             user.setAddress(address);
 
             BenchmarkProducer producer = producers.get(0);
             int payloadSize = producer.getPayloadLengthFrom(user);
 
-            log.info("payloadSize={}", payloadSize);
+            log.info("payloadSize={} bytes", payloadSize);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
