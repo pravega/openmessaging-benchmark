@@ -12,6 +12,11 @@
       "type": "string"
     },
     {
+          "name": "biography",
+          "type": "string",
+          "default": "unknown"
+    },
+    {
       "name": "eventTimestamp",
       "type": ["null", "long"],
       "default": null
@@ -24,6 +29,10 @@
         "fields": [
           {
             "name": "streetAddress",
+            "type": "string"
+          },
+          {
+            "name": "postalCode",
             "type": "string"
           },
           {
