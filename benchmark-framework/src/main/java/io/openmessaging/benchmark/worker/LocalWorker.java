@@ -212,11 +212,13 @@ public class LocalWorker implements Worker, ConsumerCallback {
             user.setUserId("testId");
             Address address = new Address();
             address.setCity("Perth");
-            address.setStreetAddress("4/19 Garden Roud");
+            address.setStreetAddress("4/19 Garden Road");
             user.setAddress(address);
 
             BenchmarkProducer producer = producers.get(0);
             int payloadSize = producer.getPayloadLengthFrom(user);
+
+            log.info("payloadSize={}", payloadSize);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
