@@ -207,20 +207,13 @@ public class LocalWorker implements Worker, ConsumerCallback {
         log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
 
         if (producerWorkAssignment.schemaFile != null) {
-            User user = new User();
-            user.setName("Greg Egan");
-            user.setUserId("3994715614");
-            user.setBiography("Greg Egan (born 20 August 1961) is an Australian science fiction writer and amateur mathematician, best known for his works of hard science fiction.");
-            Address address = new Address();
-            address.setCity("Perth");
-            address.setStreetAddress("4/19 Garden Road, Scarborough, WA, Australia");
-            address.setPostalCode("5321");
-            user.setAddress(address);
+            ObjectMapper mapper = new ObjectMapper();
+            User user = mapper.readValue(new File(producerWorkAssignment.payloadFile), User.class);
 
             BenchmarkProducer producer = producers.get(0);
             int payloadSize = producer.getPayloadLengthFrom(user);
 
-            log.info("payloadSize={} bytes", payloadSize);
+            log.info("Using payload file={} payloadSize={} bytes", producerWorkAssignment.payloadFile, payloadSize);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()

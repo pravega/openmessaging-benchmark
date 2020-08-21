@@ -85,7 +85,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    private static PravegaConfig readConfig(File configurationFile) throws IOException {
+    public static PravegaConfig readConfig(File configurationFile) throws IOException {
         return mapper.readValue(configurationFile, PravegaConfig.class);
     }
 

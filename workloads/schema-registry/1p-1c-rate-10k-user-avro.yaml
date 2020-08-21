@@ -3,8 +3,8 @@ name: 1 topic 1 partition object user schema avro
 topics: 1
 partitionsPerTopic: 1
 keyDistributor: "NO_KEY"
-messageSize: 1024
-payloadFile: "workloads/schema-registry/user.json"
+messageSize: 10000
+payloadFile: "workloads/schema-registry/user-payload-10kb.json"
 schemaFile: "workloads/schema-registry/user.avsc"
 subscriptionsPerTopic: 1
 consumerPerSubscription: 1
