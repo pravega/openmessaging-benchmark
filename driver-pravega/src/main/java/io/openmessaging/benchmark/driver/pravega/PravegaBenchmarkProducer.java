@@ -36,27 +36,21 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkProducer.class);
 
     private final EventStreamWriter writer;
+    private final Serializer serializer;
     private final boolean includeTimestampInEvent;
     private ByteBuffer timestampAndPayload;
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
                                     boolean enableConnectionPooling) {
-        log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
-        writer = clientFactory.createEventWriter(
-                streamName,
-                new ByteBufferSerializer(),
-                EventWriterConfig.builder()
-                        .enableConnectionPooling(enableConnectionPooling)
-                        .build());
-        this.includeTimestampInEvent = includeTimestampInEvent;
+        this(streamName, clientFactory, includeTimestampInEvent, enableConnectionPooling, new ByteBufferSerializer());
     }
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
-                                    boolean enableConnectionPooling, Serializer serializer, Serializer deserializer) {
+                                    boolean enableConnectionPooling, Serializer serializer) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
-
+        this.serializer = serializer;
         writer = clientFactory.createEventWriter(
                 streamName,
                 serializer,
@@ -82,15 +76,24 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, Object payload) {
-        //GenericData genericData = (GenericData) payload; // TODO fix for abstract object
+        User user = (User) payload; // TODO fix for abstract object
         if (includeTimestampInEvent) {
-//            record.setEventTimestamp(System.currentTimeMillis());
-//            return writeObjectEvent(key, user);
+            user.setEventTimestamp(System.currentTimeMillis());
         }
-        return writeObjectEvent(key, payload);
+        return writeObjectEvent(key, user);
     }
 
-    private CompletableFuture<Void> writeObjectEvent(Optional<String> key, Object payload) {
+    @Override
+    public int getPayloadLengthFrom(Object payload) { //TODO
+        if (includeTimestampInEvent) {
+            User user = (User) payload;
+            user.setEventTimestamp(System.currentTimeMillis());
+        }
+        ByteBuffer byteBuffer = serializer.serialize(payload);
+        return byteBuffer.array().length;
+    }
+
+    private CompletableFuture<Void> writeObjectEvent(Optional<String> key, User payload) {
         return (key.isPresent()) ? writer.writeEvent(key.get(), payload) : writer.writeEvent(payload);
     }
 

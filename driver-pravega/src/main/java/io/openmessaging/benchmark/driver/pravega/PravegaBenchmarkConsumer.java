@@ -86,7 +86,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
 
     public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
                                     EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager,
-                                    boolean includeTimestampInEvent, Serializer serializer, Serializer deserializer) {
+                                    boolean includeTimestampInEvent, Serializer<Object> deserializer) {
         log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, streamName={}", subscriptionName, streamName);
         // Create reader group if it doesn't already exist.
         final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
@@ -105,11 +105,11 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         this.executor.submit(() -> {
             while (!closed.get()) {
                 try {
-                    final Object event = reader.readNextEvent(1000).getEvent();
+                    final User event = (User) reader.readNextEvent(1000).getEvent();
                     if (event != null) {
                         long eventTimestamp;
                         if (includeTimestampInEvent) { // todo
-                            eventTimestamp = System.currentTimeMillis(); // event.getEventTimestamp();
+                            eventTimestamp = event.getEventTimestamp(); // event.getEventTimestamp();
                         } else {
                             // This will result in an invalid end-to-end latency measurement of 0 seconds.
                             eventTimestamp = TimeUnit.MICROSECONDS.toMillis(Long.MAX_VALUE);

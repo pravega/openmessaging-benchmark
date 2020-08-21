@@ -73,12 +73,6 @@
             <version>${schemaRegisryVersion}</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>io.pravega</groupId>-->
-<!--            <artifactId>pravega-shared-authplugin</artifactId>-->
-<!--            <version>${pravegaVersion}</version>-->
-<!--        </dependency>-->
-
         <dependency>
             <groupId>io.pravega.schemaregistry</groupId>
             <artifactId>serializers</artifactId>

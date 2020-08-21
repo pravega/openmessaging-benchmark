@@ -21,6 +21,7 @@ package io.openmessaging.benchmark.worker;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.primitives.Longs;
+import io.openmessaging.benchmark.driver.pravega.testobj.*;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
@@ -206,24 +207,22 @@ public class LocalWorker implements Worker, ConsumerCallback {
         log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
 
         if (producerWorkAssignment.schemaFile != null) {
-            Schema schema = new Schema.Parser().parse(new File(producerWorkAssignment.schemaFile));
-            //todo Files.probeContentType
-            BufferedInputStream stream = new BufferedInputStream(new FileInputStream(producerWorkAssignment.payloadFile));
-            Object payload;
-            try {
-                payload = jsonToAvro(stream, schema);
-            } catch (Exception e) {
-                log.error("Error encountered while converting json to avro of message [{}]", producerWorkAssignment.payloadFile, e);
-                throw new IOException("Error encountered while converting json to avro of message");
-            } finally {
-                stream.close();
-            }
+            User user = new User();
+            user.setName("name");
+            user.setUserId("testId");
+            Address address = new Address();
+            address.setCity("Perth");
+            address.setStreetAddress("4/19 Garden Roud");
+            user.setAddress(address);
+
+            BenchmarkProducer producer = producers.get(0);
+            int payloadSize = producer.getPayloadLengthFrom(user);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
                             .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
                     .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor,
-                            payload));
+                            user, payloadSize));
 
         } else {
             final PayloadReader payloadReader = new FilePayloadReader(producerWorkAssignment.messageSize);
@@ -235,14 +234,6 @@ public class LocalWorker implements Worker, ConsumerCallback {
                     .forEach(producersWithKeyDistributor -> submitProducersToExecutorWithBytePayload(producersWithKeyDistributor,
                             payload));
         }
-
-
-
-        Lists.partition(producers, producersPerProcessor).stream()
-                .map(producersPerThread -> producersPerThread.stream()
-                        .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
-                .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor,
-                        producerWorkAssignment));
     }
 
     // TODO need to calculate size of payload
@@ -264,7 +255,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
     }
 
     private void submitProducersToExecutor(Map<BenchmarkProducer, KeyDistributor> producersWithKeyDistributor,
-           Object payloadData) {
+           Object payloadData, long payloadSize) {
         executor.submit(() -> {
             log.info("submitProducersToExecutor: # producers={}", producersWithKeyDistributor.size());
             try {

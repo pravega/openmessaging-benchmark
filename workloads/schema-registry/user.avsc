@@ -13,7 +13,8 @@
     },
     {
       "name": "eventTimestamp",
-      "type": "long"
+      "type": ["null", "long"],
+      "default": null
     },
     {
       "name": "address",

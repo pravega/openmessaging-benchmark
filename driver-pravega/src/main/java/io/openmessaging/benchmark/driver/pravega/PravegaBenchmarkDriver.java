@@ -28,7 +28,6 @@ import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
-import io.openmessaging.benchmark.driver.pravega.testobj.User;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
@@ -38,10 +37,10 @@ import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
+import io.pravega.schemaregistry.serializer.avro.schemas.AvroSchema;
 import io.pravega.schemaregistry.serializer.shared.impl.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
 import org.apache.avro.Schema;
-import io.pravega.schemaregistry.serializer.avro.schemas.AvroSchema;
 import org.apache.bookkeeper.stats.StatsLogger;
 import org.junit.Assert;
 import org.slf4j.Logger;
@@ -129,7 +128,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
                     .groupId(schemaRegistryConfig.groupId).registryConfig(config)
                     .createGroup(SerializationFormat.Avro).registerSchema(true)
                     .build();
-            AvroSchema schema = null;
+            AvroSchema<Object> schema = null;
             try {
                 schema = AvroSchema.of(new Schema.Parser().parse(new File(schemaRegistryConfig.schemaFile)));
             } catch (IOException e) {
@@ -167,7 +166,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         } else {
             if (config.enableSchemaRegistry) {
                 producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
-                        config.writer.enableConnectionPooling, serializer, deserializer);
+                        config.writer.enableConnectionPooling, serializer);
             } else {
                 producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
                         config.writer.enableConnectionPooling);
@@ -184,7 +183,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         BenchmarkConsumer consumer;
         if (config.enableSchemaRegistry) {
             consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback,
-                    clientFactory, readerGroupManager, config.includeTimestampInEvent, serializer, deserializer);
+                    clientFactory, readerGroupManager, config.includeTimestampInEvent, deserializer);
         } else {
             consumer = new PravegaBenchmarkConsumer(topic, scopeName, subscriptionName, consumerCallback,
                     clientFactory, readerGroupManager, config.includeTimestampInEvent);
