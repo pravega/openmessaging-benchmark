@@ -30,6 +30,7 @@ public class AvroSerializerTest {
         runTest("src/test/resources/schema-registry/pravega-standalone.yaml", "src/test/resources/schema-registry/user-payload-100b.json");
     }
 
+    @Test
     public void test() throws IOException, URISyntaxException {
         runTest("src/test/resources/schema-registry/pravega.yaml", "src/test/resources/schema-registry/user-payload-100b.json");
     }
