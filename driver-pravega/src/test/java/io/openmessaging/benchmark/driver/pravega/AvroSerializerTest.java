@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AvroSerializerTest {
 
-    @Ignore //TODO make unit test, not requiring standalone pravega running along with registry
+    //@Ignore //TODO make unit test, not requiring standalone pravega running along with registry
     @Test
     public void test() throws IOException, URISyntaxException {
 
