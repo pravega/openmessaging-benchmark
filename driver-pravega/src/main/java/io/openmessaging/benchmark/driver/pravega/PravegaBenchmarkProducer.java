@@ -63,13 +63,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         if (includeTimestampInEvent) {
-            if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) { //todo need for schema-registry case?
-                timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
-            } else {
-                timestampAndPayload.position(0);
-            }
-            timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
-            return writeEvent(key, timestampAndPayload);
+            return writeEvent(key, includeTimestampInPayload(payload));
         }
         return writeEvent(key, ByteBuffer.wrap(payload));
     }
@@ -84,13 +78,31 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     }
 
     @Override
-    public int getPayloadLengthFrom(Object payload) { //TODO
+    public int getPayloadLengthFromEvent(Object payload) { //TODO
         if (includeTimestampInEvent) {
             User user = (User) payload;
             user.setEventTimestamp(System.currentTimeMillis());
         }
         ByteBuffer byteBuffer = serializer.serialize(payload);
         return byteBuffer.array().length;
+    }
+
+    @Override
+    public int getPayloadLength(byte[] payload) { //TODO
+        if (includeTimestampInEvent) {
+            return includeTimestampInPayload(payload).array().length;
+        }
+        return payload.length;
+    }
+
+    private ByteBuffer includeTimestampInPayload(byte[] payload) {
+        if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
+            timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+        } else {
+            timestampAndPayload.position(0);
+        }
+        timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
+        return timestampAndPayload;
     }
 
     private CompletableFuture<Void> writeObjectEvent(Optional<String> key, User payload) {

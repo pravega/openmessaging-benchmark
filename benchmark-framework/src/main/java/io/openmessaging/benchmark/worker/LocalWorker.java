@@ -41,10 +41,6 @@ import io.openmessaging.benchmark.utils.payload.FilePayloadReader;
 import io.openmessaging.benchmark.utils.payload.PayloadReader;
 import io.openmessaging.benchmark.worker.commands.*;
 import org.HdrHistogram.Recorder;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.io.DecoderFactory;
 import org.apache.bookkeeper.stats.Counter;
 import org.apache.bookkeeper.stats.NullStatsLogger;
 import org.apache.bookkeeper.stats.OpStatsLogger;
@@ -106,6 +102,8 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private final Recorder endToEndLatencyRecorder = new Recorder(endToEndLatencyMax, 5);
     private final Recorder endToEndCumulativeLatencyRecorder = new Recorder(endToEndLatencyMax, 5);
     private final OpStatsLogger endToEndLatencyStats;
+
+    private int payloadSize = 0;
 
     private boolean testCompleted = false;
 
@@ -205,15 +203,12 @@ public class LocalWorker implements Worker, ConsumerCallback {
             rateLimiter.setRate(producerWorkAssignment.publishRate);
         }
         log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
+        BenchmarkProducer producer = producers.get(0);
 
         if (producerWorkAssignment.schemaFile != null) {
             ObjectMapper mapper = new ObjectMapper();
             User user = mapper.readValue(new File(producerWorkAssignment.payloadFile), User.class);
-
-            BenchmarkProducer producer = producers.get(0);
-            int payloadSize = producer.getPayloadLengthFrom(user);
-
-            log.info("Using payload file={} payloadSize={} bytes", producerWorkAssignment.payloadFile, payloadSize);
+            payloadSize = producer.getPayloadLengthFromEvent(user);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
@@ -224,6 +219,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
         } else {
             final PayloadReader payloadReader = new FilePayloadReader(producerWorkAssignment.messageSize);
             byte[] payload = payloadReader.load(producerWorkAssignment.payloadFile);
+            payloadSize = producer.getPayloadLength(payload);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
@@ -231,17 +227,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
                     .forEach(producersWithKeyDistributor -> submitProducersToExecutorWithBytePayload(producersWithKeyDistributor,
                             payload));
         }
-    }
-
-    // TODO need to calculate size of payload
-    private Object jsonToAvro(InputStream stream, Schema schema) throws Exception {
-        DatumReader<Object> reader = new GenericDatumReader<>(schema);
-        Object object = reader.read(null, DecoderFactory.get().jsonDecoder(schema, stream));
-
-        if (schema.getType().equals(Schema.Type.STRING)) {
-            object = object.toString();
-        }
-        return object;
+        log.info("Using payload file={} payloadSize={} bytes", producerWorkAssignment.payloadFile, payloadSize);
     }
 
     @Override
@@ -268,8 +254,8 @@ public class LocalWorker implements Worker, ConsumerCallback {
                             totalMessagesSent.increment();
                             messagesSentCounter.inc();
                             // todo need serializer
-                            bytesSent.add(100);
-                            bytesSentCounter.add(100);
+                            bytesSent.add(payloadSize);
+                            bytesSentCounter.add(payloadSize);
 
                             long latencyMicros = Longs.constrainToRange(TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - sendTime), 0, publishLatencyMax);
                             publishLatencyRecorder.recordValue(latencyMicros);
@@ -365,8 +351,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
         return stats;
     }
 
-    @Override
-    public void messageSizeReceived(int dataLength, long publishTimestamp) {
+    private void messageSizeReceived(int dataLength, long publishTimestamp) {
         messagesReceived.increment();
         totalMessagesReceived.increment();
         messagesReceivedCounter.inc();
@@ -394,6 +379,11 @@ public class LocalWorker implements Worker, ConsumerCallback {
     @Override
     public void messageReceived(byte[] data, long publishTimestamp) {
         this.messageSizeReceived(data.length, publishTimestamp);
+    }
+
+    @Override
+    public void eventReceived(long publishTimestamp) {
+        this.messageSizeReceived(payloadSize, publishTimestamp);
     }
 
     @Override

@@ -58,7 +58,7 @@ public class AvroSerializerTest {
                 serializerConfig, schema);
 
         ObjectMapper mapper = new ObjectMapper();
-        User user = mapper.readValue(new File("src/test/resources/schema-registry/user-payload-10kb.json"), User.class);
+        User user = mapper.readValue(new File("src/test/resources/schema-registry/user-payload-100b.json"), User.class);
         ByteBuffer serialized = serializer.serialize(user);
         int payloadSize = serialized.array().length;
         log.info("Payload size: {} bytes", payloadSize);

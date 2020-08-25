@@ -39,7 +39,11 @@ public interface BenchmarkProducer extends AutoCloseable {
         throw new UnsupportedOperationException("Method is used for Schema registry support, not implemented for this driver");
     }
     //TODO
-    default int getPayloadLengthFrom(Object payload){
+    default int getPayloadLengthFromEvent(Object payload){
+        throw new UnsupportedOperationException("Method is used for Schema registry support, not implemented for this driver");
+    }
+    //TODO
+    default int getPayloadLength(byte[] payload) {
         throw new UnsupportedOperationException("Method is used for Schema registry support, not implemented for this driver");
     }
 }

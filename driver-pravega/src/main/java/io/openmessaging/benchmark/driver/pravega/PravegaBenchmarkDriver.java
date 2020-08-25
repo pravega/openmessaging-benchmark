@@ -80,37 +80,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         streamManager = StreamManager.create(clientConfig);
         readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
-    }
 
-    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-    public static PravegaConfig readConfig(File configurationFile) throws IOException {
-        return mapper.readValue(configurationFile, PravegaConfig.class);
-    }
-
-    /**
-     * Clean Pravega stream name to only allow alpha-numeric and "-".
-     */
-    private String cleanName(String name) {
-        return name.replaceAll("[^A-Za-z0-9-]", "");
-    }
-
-    @Override
-    public String getTopicNamePrefix() {
-        return "openmessaging-benchmark";
-    }
-
-    @Override
-    public CompletableFuture<Void> createTopic(String topic, int partitions) {
-        topic = cleanName(topic);
-        log.info("createTopic: topic={}, partitions={}", topic, partitions);
-        synchronized (createdTopics) {
-            createdTopics.add(topic);
-        }
-        if (config.createScope) {
-            streamManager.createScope(scopeName);
-        }
         if (config.enableSchemaRegistry) {
             SchemaRegistryConfig schemaRegistryConfig = config.schemaRegistry;
             log.info("schemaRegistryConfig: {}", schemaRegistryConfig); // todo remove
@@ -141,6 +111,37 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
             deserializer = SerializerFactory.avroDeserializer(
                     serializerConfig, schema);
+        }
+    }
+
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    public static PravegaConfig readConfig(File configurationFile) throws IOException {
+        return mapper.readValue(configurationFile, PravegaConfig.class);
+    }
+
+    /**
+     * Clean Pravega stream name to only allow alpha-numeric and "-".
+     */
+    private String cleanName(String name) {
+        return name.replaceAll("[^A-Za-z0-9-]", "");
+    }
+
+    @Override
+    public String getTopicNamePrefix() {
+        return "openmessaging-benchmark";
+    }
+
+    @Override
+    public CompletableFuture<Void> createTopic(String topic, int partitions) {
+        topic = cleanName(topic);
+        log.info("createTopic: topic={}, partitions={}", topic, partitions);
+        synchronized (createdTopics) {
+            createdTopics.add(topic);
+        }
+        if (config.createScope) {
+            streamManager.createScope(scopeName);
         }
         ScalingPolicy scalingPolicy;
         // Create a fixed or auto-scaling Stream based on user configuration.

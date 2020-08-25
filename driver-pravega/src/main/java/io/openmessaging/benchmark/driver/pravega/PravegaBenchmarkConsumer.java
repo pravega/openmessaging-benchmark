@@ -115,7 +115,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
                             eventTimestamp = TimeUnit.MICROSECONDS.toMillis(Long.MAX_VALUE);
                         }
                         // todo use consumerCallback.messageReceived with payload as byte[]
-                        consumerCallback.messageSizeReceived(100, eventTimestamp);
+                        consumerCallback.eventReceived(eventTimestamp);
                     }
                 } catch (ReinitializationRequiredException e) {
                     log.error("Exception during read", e);
