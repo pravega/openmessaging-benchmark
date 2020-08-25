@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class AvroSerializerTest {
@@ -59,10 +60,18 @@ public class AvroSerializerTest {
 
         ObjectMapper mapper = new ObjectMapper();
         User user = mapper.readValue(new File("src/test/resources/schema-registry/user-payload-100b.json"), User.class);
+        user.setEventTimestamp(System.currentTimeMillis());
+        long before = System.nanoTime();
         ByteBuffer serialized = serializer.serialize(user);
+        double serializeMillis = (System.nanoTime() - before)/(double) TimeUnit.MILLISECONDS.toNanos(1);
         int payloadSize = serialized.array().length;
+        log.info("Serialize payload size: {} bytes User object in {} millis", payloadSize, serializeMillis);
         log.info("Payload size: {} bytes", payloadSize);
+        before = System.nanoTime();
         User deserializedUser = (User) deserializer.deserialize(serialized);
-        log.info("Deserialized user: {}", user);
+        long deserializeNanos = System.nanoTime() - before;
+        double deserializeMillis = deserializeNanos/(double) TimeUnit.MILLISECONDS.toNanos(1);
+        log.info("Deserialized user: {}",  deserializedUser);
+        log.info("Deserialize payload {} bytes User object in {} nanos {} millis", payloadSize, deserializeNanos, deserializeMillis);
     }
 }
