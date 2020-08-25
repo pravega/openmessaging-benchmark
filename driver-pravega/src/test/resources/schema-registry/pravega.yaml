@@ -1,0 +1,20 @@
+client:
+  controllerURI: tcp://pravega-pravega-controller:9090
+  scopeName: schemaregistry
+
+writer:
+  enableConnectionPooling: False
+
+includeTimestampInEvent: True
+enableStreamAutoScaling: False
+eventsPerSecond: 10000
+
+enableSchemaRegistry: True
+schemaRegistry:
+  schemaRegistryURI: http://10.233.32.183:9092
+  schemaFile: "src/test/resources/schema-registry/user.avsc"
+  groupId: avrouser1
+  version:
+    type: User
+    version: 1
+    id: 1

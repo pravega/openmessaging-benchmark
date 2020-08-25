@@ -25,12 +25,18 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AvroSerializerTest {
 
-    //@Ignore //TODO make unit test, not requiring standalone pravega running along with registry
-    @Test
-    public void test() throws IOException, URISyntaxException {
+    @Ignore //TODO make unit test, not requiring standalone pravega running along with registry
+    public void testWithStandalonePravega() throws IOException, URISyntaxException {
+        runTest("src/test/resources/schema-registry/pravega-standalone.yaml", "src/test/resources/schema-registry/user-payload-100b.json");
+    }
 
-        File driverConfigFile = new File("src/test/resources/schema-registry/pravega-standalone.yaml");
-        PravegaConfig driverConfig = PravegaBenchmarkDriver.readConfig(driverConfigFile);
+    public void test() throws IOException, URISyntaxException {
+        runTest("src/test/resources/schema-registry/pravega.yaml", "src/test/resources/schema-registry/user-payload-100b.json");
+    }
+
+    private void runTest(String driverConfigFile, String payloadFile) throws IOException, URISyntaxException {
+        File driverfile = new File(driverConfigFile);
+        PravegaConfig driverConfig = PravegaBenchmarkDriver.readConfig(driverfile);
         SchemaRegistryConfig schemaRegistryConfig = driverConfig.schemaRegistry;
         log.info("schema file: {}", schemaRegistryConfig.schemaFile);
         SchemaRegistryClientConfig config = null;
@@ -59,7 +65,7 @@ public class AvroSerializerTest {
                 serializerConfig, schema);
 
         ObjectMapper mapper = new ObjectMapper();
-        User user = mapper.readValue(new File("src/test/resources/schema-registry/user-payload-100b.json"), User.class);
+        User user = mapper.readValue(new File(payloadFile), User.class);
         user.setEventTimestamp(System.currentTimeMillis());
         long before = System.nanoTime();
         ByteBuffer serialized = serializer.serialize(user);
