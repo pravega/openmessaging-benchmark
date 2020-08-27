@@ -1,6 +1,9 @@
 package io.openmessaging.benchmark.driver.pravega;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.linkedin.avro.fastserde.FastSpecificDatumReader;
+import com.linkedin.avro.fastserde.FastSpecificDatumWriter;
+import com.linkedin.avroutil1.compatibility.AvroCompatibilityHelper;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
 import io.openmessaging.benchmark.driver.pravega.testobj.User;
@@ -13,17 +16,23 @@ import io.pravega.schemaregistry.serializer.shared.impl.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.*;
-import org.apache.avro.specific.SpecificDatumReader;
-import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.avro.reflect.ReflectDatumReader;
+import org.apache.avro.reflect.ReflectDatumWriter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -49,44 +58,131 @@ public class AvroSerializerTest {
     @Test
     public void testDefaultAvroSerializer() throws IOException {
         int serializeTimes = 10;
-        String payloadFile = "src/test/resources/schema-registry/payload-100b.data";
+        String payloadFile = "src/test/resources/schema-registry/user-payload-100b.json";
         String schemaFile = "src/test/resources/schema-registry/user.avsc";
         ObjectMapper mapper = new ObjectMapper();
         User user = mapper.readValue(new File(payloadFile), User.class);
-        Schema schema;
+        Schema avroschema;
         try {
-            schema = new Schema.Parser().parse(new File(schemaFile));
+            avroschema = new Schema.Parser().parse(new File(schemaFile));
         } catch (IOException e) {
             log.error("Schema {} is invalid.", schemaFile, e);
             throw e;
         }
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
-        BinaryDecoder decoder;
-        DatumWriter<User> datumWriter = new SpecificDatumWriter(schema);
-        SpecificDatumReader<User> reader = new SpecificDatumReader(schema);
+        User newUser;
         int payloadSize;
+        for (int i = 0; i < serializeTimes; i++) {
+            // serialize
+            long before = System.nanoTime();
+            byte[] serialized = toBytesGeneric(user, avroschema);
+            long serializeNanos = System.nanoTime() - before;
+            double serializeMillis = serializeNanos / (double) TimeUnit.MILLISECONDS.toNanos(1);
+            payloadSize = serialized.length;
+            // deserialize
+            before = System.nanoTime();
+            newUser = fromBytesGeneric(serialized, avroschema, user);
+            long deserializeNanos = System.nanoTime() - before;
+            double deserializeMillis = deserializeNanos / (double) TimeUnit.MILLISECONDS.toNanos(1);
+            log.info("Payload {} bytes, serialize: {}ms, deserialize: {}ms", payloadSize, serializeMillis, deserializeMillis);
+        }
+    }
+
+    @Test
+    public void testFastAvroSerializer() throws Exception {
+        int serializeTimes = 10;
+        //String payloadFile = "src/test/resources/schema-registry/user-payload-100b.json";
+        String line = Files.readAllLines(Paths.get("src/test/resources/schema-registry/user-oneline-100b.json")).get(0);
+        String schemaFile = "src/test/resources/schema-registry/user-light.avsc";
+        Schema avroschema;
         try {
-            for (int i = 0; i < serializeTimes; i++) {
-                // serialize
-                long before = System.nanoTime();
-                datumWriter.write(user, encoder);
-                encoder.flush();
-                byte[] serialized = out.toByteArray();
-                long serializeNanos = System.nanoTime() - before;
-                double serializeMillis = serializeNanos / (double) TimeUnit.MILLISECONDS.toNanos(1);
-                payloadSize = serialized.length;
-                // deserialize
-                before = System.nanoTime();
-                decoder = DecoderFactory.get().binaryDecoder(serialized, null);
-                User deserialized = reader.read(null, decoder);
-                long deserializeNanos = System.nanoTime() - before;
-                double deserializeMillis = deserializeNanos / (double) TimeUnit.MILLISECONDS.toNanos(1);
-                log.info("Payload {} bytes, serialize: {}ms, deserialize: {} ms", payloadSize, serializeMillis, deserializeMillis);
-                out.reset();
-            }
-        } finally {
-            out.close();
+            avroschema = new Schema.Parser().parse(new File(schemaFile));
+        } catch (IOException e) {
+            log.error("Schema {} is invalid.", schemaFile, e);
+            throw e;
+        }
+        GenericRecord user, newUser;
+        user = jsonToAvro(line, avroschema);
+
+        int payloadSize;
+        for (int i = 0; i < serializeTimes; i++) {
+            // serialize
+            long before = System.nanoTime();
+            byte[] serialized = fast2BytesGeneric(user, avroschema);
+            long serializeNanos = System.nanoTime() - before;
+            double serializeMillis = serializeNanos / (double) TimeUnit.MILLISECONDS.toNanos(1);
+            payloadSize = serialized.length;
+            // deserialize
+//            before = System.nanoTime();
+//            newUser = fastFromBytesGeneric(serialized, avroschema, null);
+//            long deserializeNanos = System.nanoTime() - before;
+//            double deserializeMillis = deserializeNanos / (double) TimeUnit.MILLISECONDS.toNanos(1);
+            log.info("Payload {} bytes, serialize: {}ms, deserialize: ms", payloadSize, serializeMillis);//, deserializeMillis);
+        }
+    }
+
+    private static Object jsonToAvro(InputStream stream, Schema schema) throws Exception {
+        DatumReader<Object> reader = new GenericDatumReader<>(schema);
+        Object object = reader.read(null, DecoderFactory.get().jsonDecoder(schema, stream));
+
+        if (schema.getType().equals(Schema.Type.STRING)) {
+            object = object.toString();
+        }
+        return object;
+    }
+
+    private static GenericRecord jsonToAvro(String input, Schema schema) throws Exception {
+        DatumReader<GenericRecord> reader = new GenericDatumReader<>(schema);
+        GenericRecord object = reader.read(null, DecoderFactory.get().jsonDecoder(schema, input));
+
+//        if (schema.getType().equals(Schema.Type.STRING)) {
+//            object = object.toString();
+//        }
+        return object;
+    }
+
+    public static <V> byte[] fast2BytesGeneric(final V v, final Schema schema) {
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final DatumWriter<V> writer = new FastSpecificDatumWriter<V>(schema);
+        final BinaryEncoder binEncoder = AvroCompatibilityHelper.newBinaryEncoder(bout, false, null);
+        try {
+            writer.write(v, binEncoder);
+            binEncoder.flush();
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+        return bout.toByteArray();
+    }
+
+    public static <V> V fastFromBytesGeneric(final byte[] serialized, final Schema schema, final V oldV) {
+        final DatumReader<V> reader = new FastSpecificDatumReader<V>(schema);
+        final BinaryDecoder decoder = AvroCompatibilityHelper.newBinaryDecoder(serialized);
+        try {
+            return reader.read(oldV, decoder);
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <V> byte[] toBytesGeneric(final V v, final Schema schema) {
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final DatumWriter<V> writer = new ReflectDatumWriter<V>(schema);
+        final BinaryEncoder binEncoder = EncoderFactory.get().binaryEncoder(bout, null);
+        try {
+            writer.write(v, binEncoder);
+            binEncoder.flush();
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+        return bout.toByteArray();
+    }
+
+    public static <V> V fromBytesGeneric(final byte[] serialized, final Schema schema, final V oldV) {
+        final DatumReader<V> reader = new ReflectDatumReader<V>(schema);
+        final BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(serialized, null);
+        try {
+            return reader.read(oldV, decoder);
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
