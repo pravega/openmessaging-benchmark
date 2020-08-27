@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "namespace": "io.openmessaging.benchmark.driver.pravega.testobj",
+  "namespace": "io.openmessaging.benchmark.driver.pravega.testobj.generated",
   "name": "User",
   "fields": [
     {
@@ -24,7 +24,7 @@
     {
       "name": "address",
       "type": {
-        "name" : "address_entry",
+        "name" : "AddressEntry",
         "type" : "record",
         "fields": [
           {
@@ -33,7 +33,7 @@
           },
           {
             "name": "postalCode",
-            "type": ["null", "long"],
+            "type": ["null", "int"],
             "default": null
           },
           {

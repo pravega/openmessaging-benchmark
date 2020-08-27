@@ -21,7 +21,6 @@ package io.openmessaging.benchmark.worker;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.primitives.Longs;
-import io.openmessaging.benchmark.driver.pravega.testobj.*;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
@@ -207,7 +206,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
 
         if (producerWorkAssignment.schemaFile != null) {
             ObjectMapper mapper = new ObjectMapper();
-            User user = mapper.readValue(new File(producerWorkAssignment.payloadFile), User.class);
+            io.openmessaging.benchmark.driver.pravega.generated.User user = mapper.readValue(new File(producerWorkAssignment.payloadFile), User.class);
             payloadSize = producer.getPayloadLengthFromEvent(user);
 
             Lists.partition(producers, producersPerProcessor).stream()

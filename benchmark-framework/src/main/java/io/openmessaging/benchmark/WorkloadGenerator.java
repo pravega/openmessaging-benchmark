@@ -19,12 +19,9 @@
 package io.openmessaging.benchmark;
 
 import com.google.common.math.Stats;
-import io.openmessaging.benchmark.driver.pravega.testobj.User;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,19 +31,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import io.openmessaging.benchmark.worker.commands.*;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.io.DecoderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.openmessaging.benchmark.utils.PaddingDecimalFormat;
 import io.openmessaging.benchmark.utils.Timer;
-import io.openmessaging.benchmark.utils.payload.FilePayloadReader;
-import io.openmessaging.benchmark.utils.payload.PayloadReader;
 import io.openmessaging.benchmark.worker.Worker;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericDatumReader;
 
 public class WorkloadGenerator implements AutoCloseable {
 
