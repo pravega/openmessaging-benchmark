@@ -52,14 +52,14 @@
             <url>https://jitpack.io</url>
         </repository>
         <!-- Faster avro serialization https://github.com/linkedin/avro-util -->
-        <repository>
-            <id>linkedin</id>
-            <name>linkedin</name>
-            <url>https://dl.bintray.com/linkedin/maven</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
+<!--        <repository>-->
+<!--            <id>linkedin</id>-->
+<!--            <name>linkedin</name>-->
+<!--            <url>https://dl.bintray.com/linkedin/maven</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>false</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
     </repositories>
 
     <dependencies>
@@ -108,19 +108,19 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.linkedin.avroutil1</groupId>
-            <artifactId>helper-all</artifactId>
-            <version>0.2.7</version>
-            <scope>test</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.linkedin.avroutil1</groupId>-->
+<!--            <artifactId>helper-all</artifactId>-->
+<!--            <version>0.2.7</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>com.linkedin.avroutil1</groupId>
-            <artifactId>avro-fastserde</artifactId>
-            <version>0.2.6</version>
-            <scope>test</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.linkedin.avroutil1</groupId>-->
+<!--            <artifactId>avro-fastserde</artifactId>-->
+<!--            <version>0.2.6</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
 
 <!--        <dependency>-->
 <!--            <groupId>com.fasterxml.jackson.dataformat</groupId>-->
