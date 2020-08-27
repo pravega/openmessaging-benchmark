@@ -193,7 +193,7 @@ public class AvroSerializerTest {
 
     @Test
     public void testDefaultSerializer() throws IOException {
-        serializeByte("src/test/resources/schema-registry/payload-100b.data", 10);
+        serializeByte("src/test/resources/schema-registry/payload-100b.data", 100);
     }
 
     private void serializeByte(String payloadFile, int serializeTimes) throws IOException {
