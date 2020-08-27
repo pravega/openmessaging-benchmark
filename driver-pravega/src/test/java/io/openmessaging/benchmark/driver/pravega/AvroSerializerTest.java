@@ -52,7 +52,12 @@ public class AvroSerializerTest {
 
     @Test
     public void testSerializeAvro() throws IOException, URISyntaxException {
-        serializeAvro("src/test/resources/schema-registry/pravega.yaml", "src/test/resources/schema-registry/user-payload-100b.json", 10);
+        serializeAvro("src/test/resources/schema-registry/pravega.yaml", "src/test/resources/schema-registry/user-payload-100b.json", 100);
+    }
+
+    @Test
+    public void test() {
+        org.glassfish.jersey.internal.LocalizationMessages.WARNING_PROPERTIES();
     }
 
     @Test
@@ -267,7 +272,7 @@ public class AvroSerializerTest {
             long deserializeNanos = System.nanoTime() - before;
             double deserializeMillis = deserializeNanos / (double) TimeUnit.MILLISECONDS.toNanos(1);
             //log.info("Deserialized user: {}", deserializedUser);
-            log.info("Payload {} bytes, serialize: {}ms, deserialize: {}ms", payloadSize, serializeMillis, deserializeMillis);
+            log.info("Payload {} bytes, serialize: {} ms, deserialize: {} ms", payloadSize, serializeMillis, deserializeMillis);
             serialize.add(Pair.of(serializeMillis, deserializeMillis));
         }
 
