@@ -1,0 +1,14 @@
+name: Pravega
+driverClass: io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver
+
+# Pravega client-specific configuration
+client:
+  controllerURI: tcp://localhost:9090
+  scopeName: schemaregistry
+
+writer:
+  enableConnectionPooling: False
+
+includeTimestampInEvent: True
+enableStreamAutoScaling: False
+eventsPerSecond: 10000

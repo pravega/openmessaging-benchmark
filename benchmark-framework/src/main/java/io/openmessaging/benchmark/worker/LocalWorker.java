@@ -21,6 +21,7 @@ package io.openmessaging.benchmark.worker;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.primitives.Longs;
+import io.openmessaging.benchmark.driver.pravega.testobj.generated.User;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
@@ -40,10 +41,15 @@ import io.openmessaging.benchmark.utils.payload.FilePayloadReader;
 import io.openmessaging.benchmark.utils.payload.PayloadReader;
 import io.openmessaging.benchmark.worker.commands.*;
 import org.HdrHistogram.Recorder;
+import org.apache.avro.Schema;
+import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.io.JsonDecoder;
+import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.bookkeeper.stats.Counter;
 import org.apache.bookkeeper.stats.NullStatsLogger;
 import org.apache.bookkeeper.stats.OpStatsLogger;
 import org.apache.bookkeeper.stats.StatsLogger;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -205,8 +211,12 @@ public class LocalWorker implements Worker, ConsumerCallback {
         BenchmarkProducer producer = producers.get(0);
 
         if (producerWorkAssignment.schemaFile != null) {
-            ObjectMapper mapper = new ObjectMapper();
-            io.openmessaging.benchmark.driver.pravega.generated.User user = mapper.readValue(new File(producerWorkAssignment.payloadFile), User.class);
+            String payloadJSON = FileUtils.readFileToString(new File(producerWorkAssignment.payloadFile), "UTF-8");
+            Schema schema = new Schema.Parser().parse(new File(producerWorkAssignment.schemaFile));
+            JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, payloadJSON);
+            SpecificDatumReader<User> reader = new SpecificDatumReader<>(User.class);
+            User user = reader.read(null, decoder);
+
             payloadSize = producer.getPayloadLengthFromEvent(user);
 
             Lists.partition(producers, producersPerProcessor).stream()

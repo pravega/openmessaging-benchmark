@@ -20,7 +20,7 @@ package io.openmessaging.benchmark.worker.commands;
 
 import io.openmessaging.benchmark.utils.distributor.KeyDistributorType;
 
-// TODO use instead workload
+// TODO recvert to fix for DistributedWorker
 public class ProducerWorkAssignment {
 
     public String payloadFile;

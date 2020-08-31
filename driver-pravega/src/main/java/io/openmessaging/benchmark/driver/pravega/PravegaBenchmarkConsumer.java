@@ -20,7 +20,7 @@ package io.openmessaging.benchmark.driver.pravega;
 
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
-import io.openmessaging.benchmark.driver.pravega.testobj.User;
+import io.openmessaging.benchmark.driver.pravega.testobj.generated.User;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.stream.*;
@@ -109,7 +109,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
                     if (event != null) {
                         long eventTimestamp;
                         if (includeTimestampInEvent) { // todo
-                            eventTimestamp = event.getEventTimestamp(); // event.getEventTimestamp();
+                            eventTimestamp = event.getEventTimestamp();
                         } else {
                             // This will result in an invalid end-to-end latency measurement of 0 seconds.
                             eventTimestamp = TimeUnit.MICROSECONDS.toMillis(Long.MAX_VALUE);
