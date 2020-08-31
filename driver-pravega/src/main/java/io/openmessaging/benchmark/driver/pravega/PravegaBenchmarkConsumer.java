@@ -86,7 +86,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
 
     public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
                                     EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager,
-                                    boolean includeTimestampInEvent, Serializer<Object> deserializer) {
+                                    boolean includeTimestampInEvent, Serializer<User> deserializer) {
         log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, streamName={}", subscriptionName, streamName);
         // Create reader group if it doesn't already exist.
         final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
@@ -94,7 +94,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
                 .build();
         readerGroupManager.createReaderGroup(subscriptionName, readerGroupConfig);
 
-        reader = clientFactory.createReader(
+        reader = clientFactory.<User>createReader(
                 UUID.randomUUID().toString(),
                 subscriptionName,
                 deserializer,

@@ -28,6 +28,7 @@ import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
+import io.openmessaging.benchmark.driver.pravega.testobj.generated.User;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
@@ -61,7 +62,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     private PravegaConfig config;
     private ClientConfig clientConfig;
-    private Serializer<Object> serializer, deserializer;
+    private Serializer<User> serializer, deserializer;
     private String scopeName;
     private StreamManager streamManager;
     private ReaderGroupManager readerGroupManager;
@@ -98,13 +99,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
                     .groupId(schemaRegistryConfig.groupId).registryConfig(config)
                     .createGroup(SerializationFormat.Avro).registerSchema(true)
                     .build();
-            AvroSchema<Object> schema = null;
-            try {
-                schema = AvroSchema.of(new Schema.Parser().parse(new File(schemaRegistryConfig.schemaFile)));
-            } catch (IOException e) {
-                log.error("Schema {} is invalid.", schemaRegistryConfig.schemaFile, e);
-                // todo throw
-            }
+            AvroSchema<User> schema = AvroSchema.of(User.class);
 
             serializer = SerializerFactory
                     .avroSerializer(serializerConfig, schema);
