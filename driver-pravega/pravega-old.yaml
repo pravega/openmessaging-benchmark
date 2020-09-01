@@ -17,14 +17,13 @@
 # under the License.
 #
 
-
 name: Pravega
 driverClass: io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver
 
 # Pravega client-specific configuration
 client:
   controllerURI: tcp://pravega-pravega-controller:9090
-  scopeName: schemasupport
+  scopeName: sample
 
 writer:
   enableConnectionPooling: False
@@ -32,13 +31,3 @@ writer:
 includeTimestampInEvent: True
 enableStreamAutoScaling: False
 eventsPerSecond: 10000
-# TODO: comment schema registry params
-enableSchemaRegistry: True
-schemaRegistry:
-  schemaRegistryURI: http://10.233.36.123:9092
-  schemaFile: "workloads/schema-registry/user.avsc"
-  groupId: avrouser1
-  version:
-    type: User
-    version: 0
-    id: 0

@@ -1,0 +1,13 @@
+name: 1 topic 1 partition 100b rate 1mln
+
+topics: 1
+partitionsPerTopic: 1
+keyDistributor: "NO_KEY"
+messageSize: 100
+payloadFile: "payload/payload-100b.data"
+subscriptionsPerTopic: 1
+consumerPerSubscription: 1
+producersPerTopic: 1
+producerRate: 1000000
+consumerBacklogSizeGB: 0
+testDurationMinutes: 2
