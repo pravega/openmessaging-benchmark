@@ -14,6 +14,6 @@ num_instances = {
   "controller"   = 1
   "bookkeeper"   = 3
   "zookeeper"    = 3
-  "client"       = 2
+  "client"       = 4
   "metrics"      = 1
 }
