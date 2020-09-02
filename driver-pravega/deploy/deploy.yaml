@@ -38,11 +38,11 @@
         influxDBURI: "http://{{ hostvars[groups['metrics'][0]].private_ip }}:8086"
     - set_fact:
         # Change below to use a published release of Pravega or a local build.
-        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
-        pravegaSrcRemote: yes
+        # pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
+        # pravegaSrcRemote: yes
         # Here is the file path for local Pravega build
-        # pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
-        # pravegaSrcRemote: no
+        pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
+        pravegaSrcRemote: no
         pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
 
 - name: Uninstall
@@ -309,16 +309,16 @@
         path: "{{ item.path }}"
         state: unmounted
       with_items:
-        - { path: "/mnt/journal", src: "/dev/nvme0n1" }
-        - { path: "/mnt/storage", src: "/dev/nvme1n1" }
+        - { path: "/mnt/journal", src: "/dev/nvme1n1" }
+        - { path: "/mnt/storage", src: "/dev/nvme2n1" }
     - name: Format disks
       filesystem:
         fstype: xfs
         dev: '{{ item }}'
         force: yes
       with_items:
-        - '/dev/nvme0n1'
         - '/dev/nvme1n1'
+        - '/dev/nvme2n1'
     - name: Mount disks
       mount:
         path: "{{ item.path }}"
@@ -327,8 +327,8 @@
         opts: defaults,noatime,nodiscard
         state: mounted
       with_items:
-        - { path: "/mnt/journal", src: "/dev/nvme0n1" }
-        - { path: "/mnt/storage", src: "/dev/nvme1n1" }
+        - { path: "/mnt/journal", src: "/dev/nvme1n1" }
+        - { path: "/mnt/storage", src: "/dev/nvme2n1" }
 
 - name: BookKeeper setup
   hosts: bookkeeper
