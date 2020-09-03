@@ -38,11 +38,11 @@
         influxDBURI: "http://{{ hostvars[groups['metrics'][0]].private_ip }}:8086"
     - set_fact:
         # Change below to use a published release of Pravega or a local build.
-        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
-        pravegaSrcRemote: yes
+#        pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
+#        pravegaSrcRemote: yes
         # Here is the file path for local Pravega build
-        # pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
-        # pravegaSrcRemote: no
+        pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
+        pravegaSrcRemote: no
         pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
 
 - name: Uninstall
