@@ -70,7 +70,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private final List<String> createdTopics = new ArrayList<>();
 
     @Override
-    public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
+    public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException, URISyntaxException {
         config = readConfig(configurationFile);
         log.info("Pravega driver configuration: {}", objectWriter.writeValueAsString(config));
         if (config.enableSchemaRegistry) {
@@ -92,7 +92,7 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
                         .schemaRegistryUri(new URI(schemaRegistryConfig.schemaRegistryURI)).build();
             } catch (URISyntaxException e) {
                 log.error("schemaRegistryURI {} is invalid.", schemaRegistryConfig.schemaRegistryURI, e);
-                // todo throw
+                throw e;
             }
 
             SerializerConfig serializerConfig = SerializerConfig.builder()

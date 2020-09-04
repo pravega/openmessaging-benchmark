@@ -20,6 +20,7 @@ package io.openmessaging.benchmark.driver;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.concurrent.CompletableFuture;
 import org.apache.bookkeeper.stats.StatsLogger;
 
@@ -37,7 +38,7 @@ public interface BenchmarkDriver extends AutoCloseable {
      * @param statsLogger stats logger to collect stats from benchmark driver
      * @throws IOException
      */
-    void initialize(File configurationFile, StatsLogger statsLogger) throws IOException;
+    void initialize(File configurationFile, StatsLogger statsLogger) throws IOException, URISyntaxException;
 
     /**
      * Get a driver specific prefix to be used in creating multiple topic names

@@ -25,6 +25,7 @@ import io.openmessaging.benchmark.driver.pravega.testobj.generated.User;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -144,7 +145,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
         try {
             benchmarkDriver = (BenchmarkDriver) Class.forName(driverConfiguration.driverClass).newInstance();
             benchmarkDriver.initialize(driverConfigFile, statsLogger);
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
