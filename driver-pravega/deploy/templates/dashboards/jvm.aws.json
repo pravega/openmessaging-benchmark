@@ -77,7 +77,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(process_cpu_seconds_total{group=\"broker\"}[30s]) * 100\n\n",
+              "expr": "irate(process_cpu_seconds_total{group=\"segmentstore\"}[30s]) * 100\n\n",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -166,7 +166,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(jvm_memory_bytes_committed{group=\"broker\"})",
+              "expr": "sum(jvm_memory_bytes_committed{group=\"segmentstore\"})",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -177,7 +177,7 @@
               "step": 60
             },
             {
-              "expr": "sum(jvm_memory_bytes_used{group=\"broker\"})",
+              "expr": "sum(jvm_memory_bytes_used{group=\"segmentstore\"})",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -187,7 +187,7 @@
               "step": 60
             },
             {
-              "expr": "sum(jvm_memory_bytes_max{group=\"broker\"})",
+              "expr": "sum(jvm_memory_bytes_max{group=\"segmentstore\"})",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -265,7 +265,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "jvm_memory_direct_bytes_used{group=\"broker\"}",
+              "expr": "jvm_memory_direct_bytes_used{group=\"segmentstore\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -275,7 +275,7 @@
               "step": 60
             },
             {
-              "expr": "jvm_memory_direct_bytes_max{group=\"broker\"}",
+              "expr": "jvm_memory_direct_bytes_max{group=\"segmentstore\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -362,7 +362,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(increase(jvm_gc_collection_seconds_sum{group=\"broker\"}[30s]))",
+              "expr": "sum(increase(jvm_gc_collection_seconds_sum{group=\"segmentstore\"}[30s]))",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -414,7 +414,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": true,
-      "title": "Brokers",
+      "title": "Segmentstores",
       "titleSize": "h6"
     },
     {
@@ -831,6 +831,6 @@
     ]
   },
   "timezone": "browser",
-  "title": "Pulsar - JVM (AWS)",
+  "title": "Pravega - JVM (AWS)",
   "version": 1
 }
