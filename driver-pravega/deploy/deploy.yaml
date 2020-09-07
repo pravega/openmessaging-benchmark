@@ -376,8 +376,6 @@
   tags: ["segmentstore"]
   connection: ssh
   become: true
-  environment:
-    PRAVEGA_SEGMENTSTORE_OPTS: "-Xms6G -Xmx6G -XX:MaxDirectMemorySize=10g"
   tasks:
     - name: Mount EFS volume for Pravega tier 2 storage
       mount:
