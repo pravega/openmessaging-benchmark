@@ -35,6 +35,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     private final EventStreamWriter<ByteBuffer> writer;
     private final boolean includeTimestampInEvent;
+    private ByteBuffer timestampAndPayload;
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
@@ -52,7 +53,11 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         if (includeTimestampInEvent) {
-            ByteBuffer timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+            if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
+                timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+            } else {
+                timestampAndPayload.position(0);
+            }
             timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
             return writeEvent(key, timestampAndPayload);
         }

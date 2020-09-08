@@ -26,10 +26,15 @@ import java.util.TreeMap;
 public class TestResult {
     public String workload;
     public String driver;
+    public int messageSize;
+    public int producerRate;
 
     public List<Double> publishRate = new ArrayList<>();
     public List<Double> consumeRate = new ArrayList<>();
     public List<Long> backlog = new ArrayList<>();
+    public double aggregatedPublishRate;
+    public double aggregatedConsumeRate;
+
 
     public List<Double> publishLatencyAvg = new ArrayList<>();
     public List<Double> publishLatency50pct = new ArrayList<>();

@@ -436,6 +436,10 @@ public class WorkloadGenerator implements AutoCloseable {
             if (now >= testEndTime && !needToWaitForBacklogDraining) {
                 double aggPublishRate = Stats.meanOf(result.publishRate);
                 double aggConsumeRate = Stats.meanOf(result.consumeRate);
+                result.aggregatedConsumeRate = aggConsumeRate;
+                result.aggregatedPublishRate = publishRate;
+                result.messageSize = workload.messageSize;
+                result.producerRate = workload.producerRate;
                 log.info(
                         "----- Aggregated Pub rate {} msg/s / {} MB/s | Cons rate {} msg/s / {} MB/s",
                         throughputFormat.format(aggPublishRate),
