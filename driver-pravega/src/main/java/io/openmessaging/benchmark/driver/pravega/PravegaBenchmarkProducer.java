@@ -52,14 +52,18 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
+//        if (includeTimestampInEvent) {
+//            if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
+//                timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+//            } else {
+//                timestampAndPayload.position(0);
+//            }
+//            timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
+//            return writeEvent(key, timestampAndPayload);
+//        }
         if (includeTimestampInEvent) {
-            if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
-                timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
-            } else {
-                timestampAndPayload.position(0);
-            }
+            timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
             timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
-            return writeEvent(key, timestampAndPayload);
         }
         return writeEvent(key, ByteBuffer.wrap(payload));
     }
