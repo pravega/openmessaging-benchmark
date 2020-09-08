@@ -64,6 +64,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         if (includeTimestampInEvent) {
             timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
             timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
+            return writeEvent(key, timestampAndPayload);
         }
         return writeEvent(key, ByteBuffer.wrap(payload));
     }
