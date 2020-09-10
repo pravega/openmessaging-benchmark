@@ -31,13 +31,9 @@
 
     <properties>
         <!--Specify pravegaVersion in properties or use default: 0.7.1-->
-        <!--Provide Pravega version for build: mvn clean install  "-DpravegaVersion=0.8.0-2623.279ac21-SNAPSHOT" -DskipTests=true -Dlicense.skip=true-->
+        <!--Provide Pravega version for build: mvn clean install  "-DpravegaVersion=0.8.0" -DskipTests=true -Dlicense.skip=true-->
         <pravegaVersion>0.8.0</pravegaVersion>
-<!--        <schemaRegisryVersion>0.1.0-27.6284faf-SNAPSHOT</schemaRegisryVersion> &lt;!&ndash; TODO &ndash;&gt;-->
-<!--        <schemaRegisryVersion>0.1.0-30.7c5214f-SNAPSHOT</schemaRegisryVersion>-->
-<!--        <schemaRegisryVersion>0.1.0-30.131e440-SNAPSHOT</schemaRegisryVersion>-->
-<!--        <schemaRegisryVersion>0.1.0-31.363db4c-SNAPSHOT</schemaRegisryVersion>-->
-        <schemaRegisryVersion>0.1.0-30.3bf741c-SNAPSHOT</schemaRegisryVersion>
+        <schemaRegisryVersion>0.1.0-32.72a7d2b-SNAPSHOT</schemaRegisryVersion>
     </properties>
 
     <repositories>
