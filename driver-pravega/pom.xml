@@ -42,7 +42,7 @@
             <name>jfrog</name>
             <url>https://oss.jfrog.org/jfrog-dependencies</url>
             <snapshots>
-                <enabled>false</enabled>
+                <enabled>false</enabled><!-- changed for Dan's scripts -->
             </snapshots>
         </repository>
         <!-- TODO schema registry -->

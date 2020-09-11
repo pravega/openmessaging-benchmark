@@ -1,0 +1,17 @@
+{
+  "userId" : "Iu6AxdBYGR4A0wspR9BYHA",
+  "name" : "Greg Egan",
+  "biography" : {
+    "string" : "Greg Egan was born 20 August 1961."
+  },
+  "eventTimestamp" : {
+    "long" : 1598861194924
+  },
+  "address" : {
+    "streetAddress" : "4/19 Gardner Road",
+    "postalCode" : {
+      "int" : 5018
+    },
+    "city" : "Perth"
+  }
+}
