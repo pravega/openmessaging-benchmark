@@ -35,6 +35,7 @@
         <pravegaVersion>0.8.0</pravegaVersion>
         <schemaRegisryVersion>0.1.0-32.72a7d2b-SNAPSHOT</schemaRegisryVersion>
         <avroVersion>1.9.2</avroVersion>
+        <keycloakVersion>0.7.0-13.8cd1997-SNAPSHOT</keycloakVersion>
     </properties>
 
     <repositories>
@@ -43,7 +44,7 @@
             <name>jfrog</name>
             <url>https://oss.jfrog.org/jfrog-dependencies</url>
             <snapshots>
-                <enabled>false</enabled><!-- changed for Dan's scripts -->
+                <enabled>true</enabled><!-- changed for Dan's scripts -->
             </snapshots>
         </repository>
         <!-- TODO schema registry -->
@@ -161,7 +162,7 @@
         <dependency>
             <groupId>io.pravega</groupId>
             <artifactId>pravega-keycloak-client</artifactId>
-            <version>0.6.1</version>
+            <version>${keycloakVersion}</version>
         </dependency>
 
         <dependency>
