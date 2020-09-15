@@ -73,7 +73,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     }
 
     @Override
-    public CompletableFuture<Void> sendAsync(Optional<String> key, Object ignore) {
+    public CompletableFuture<Void> sendAsync(Optional<String> key) {
         // TODO fix for abstract object
         if (includeTimestampInEvent) {
             user.setEventTimestamp(System.currentTimeMillis());
