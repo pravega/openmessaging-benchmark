@@ -2,13 +2,16 @@
   "userId" : "Iu6AxdBYGR4A0wspR9BYHA",
   "name" : "Greg Egan",
   "biography" : {
-    "string" : "Greg Egan was born 20 August 1961."
+    "string" : "Greg Egan was born on 20."
   },
   "eventTimestamp" : {
     "long" : 1598861194924
   },
+  "keyValues": null,
+  "keyValues2": null,
+  "keyValues3": null,
   "address" : {
-    "streetAddress" : "4/19 Gardner Road",
+    "streetAddress" : "41 Gardner Road",
     "postalCode" : {
       "int" : 5018
     },

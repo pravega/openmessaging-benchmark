@@ -19,7 +19,7 @@
 package io.openmessaging.benchmark.driver.pravega;
 
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
-import io.openmessaging.benchmark.driver.pravega.testobj.generated.User;
+import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
 import io.pravega.client.stream.EventWriterConfig;
@@ -38,6 +38,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private final Serializer serializer;
     private final boolean includeTimestampInEvent;
     private ByteBuffer timestampAndPayload;
+    private User user;
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
@@ -59,6 +60,10 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         this.includeTimestampInEvent = includeTimestampInEvent;
     }
 
+    public void setPayload(User user) {
+        this.user = user;
+    }
+
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         if (includeTimestampInEvent) {
@@ -68,8 +73,8 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     }
 
     @Override
-    public CompletableFuture<Void> sendAsync(Optional<String> key, Object payload) {
-        User user = (User) payload; // TODO fix for abstract object
+    public CompletableFuture<Void> sendAsync(Optional<String> key, Object ignore) {
+        // TODO fix for abstract object
         if (includeTimestampInEvent) {
             user.setEventTimestamp(System.currentTimeMillis());
         }

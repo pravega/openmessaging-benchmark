@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT DIRECTLY
  */
-package io.openmessaging.benchmark.driver.pravega.testobj.generated;
+package io.openmessaging.benchmark.driver.pravega.schema.generated.avro;
 
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.specific.SpecificData;
@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -7308962401322999334L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"AddressEntry\",\"namespace\":\"io.openmessaging.benchmark.driver.pravega.testobj.generated\",\"fields\":[{\"name\":\"streetAddress\",\"type\":\"string\"},{\"name\":\"postalCode\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"city\",\"type\":\"string\"}]}");
+  private static final long serialVersionUID = 3877146114645745535L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"AddressEntry\",\"namespace\":\"io.openmessaging.benchmark.driver.pravega.schema.generated.avro\",\"fields\":[{\"name\":\"streetAddress\",\"type\":\"string\"},{\"name\":\"postalCode\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"city\",\"type\":\"string\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -71,9 +71,9 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
     return DECODER.decode(b);
   }
 
-   private java.lang.CharSequence streetAddress;
-   private java.lang.Integer postalCode;
-   private java.lang.CharSequence city;
+  @Deprecated public java.lang.CharSequence streetAddress;
+  @Deprecated public java.lang.Integer postalCode;
+  @Deprecated public java.lang.CharSequence city;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -172,8 +172,8 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
    * Creates a new AddressEntry RecordBuilder.
    * @return A new AddressEntry RecordBuilder
    */
-  public static io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder newBuilder() {
-    return new io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder();
+  public static io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder newBuilder() {
+    return new io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder();
   }
 
   /**
@@ -181,11 +181,11 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
    * @param other The existing builder to copy.
    * @return A new AddressEntry RecordBuilder
    */
-  public static io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder newBuilder(io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder other) {
+  public static io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder newBuilder(io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder other) {
     if (other == null) {
-      return new io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder();
+      return new io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder();
     } else {
-      return new io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder(other);
+      return new io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder(other);
     }
   }
 
@@ -194,17 +194,18 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
    * @param other The existing instance to copy.
    * @return A new AddressEntry RecordBuilder
    */
-  public static io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder newBuilder(io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry other) {
+  public static io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder newBuilder(io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry other) {
     if (other == null) {
-      return new io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder();
+      return new io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder();
     } else {
-      return new io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder(other);
+      return new io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder(other);
     }
   }
 
   /**
    * RecordBuilder for AddressEntry instances.
    */
+  @org.apache.avro.specific.AvroGenerated
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<AddressEntry>
     implements org.apache.avro.data.RecordBuilder<AddressEntry> {
 
@@ -221,7 +222,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder other) {
+    private Builder(io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.streetAddress)) {
         this.streetAddress = data().deepCopy(fields()[0].schema(), other.streetAddress);
@@ -241,7 +242,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
      * Creates a Builder by copying an existing AddressEntry instance
      * @param other The existing instance to copy.
      */
-    private Builder(io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry other) {
+    private Builder(io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry other) {
       super(SCHEMA$);
       if (isValidValue(fields()[0], other.streetAddress)) {
         this.streetAddress = data().deepCopy(fields()[0].schema(), other.streetAddress);
@@ -271,7 +272,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
       * @param value The value of 'streetAddress'.
       * @return This builder.
       */
-    public io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder setStreetAddress(java.lang.CharSequence value) {
+    public io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder setStreetAddress(java.lang.CharSequence value) {
       validate(fields()[0], value);
       this.streetAddress = value;
       fieldSetFlags()[0] = true;
@@ -291,7 +292,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
       * Clears the value of the 'streetAddress' field.
       * @return This builder.
       */
-    public io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder clearStreetAddress() {
+    public io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder clearStreetAddress() {
       streetAddress = null;
       fieldSetFlags()[0] = false;
       return this;
@@ -311,7 +312,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
       * @param value The value of 'postalCode'.
       * @return This builder.
       */
-    public io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder setPostalCode(java.lang.Integer value) {
+    public io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder setPostalCode(java.lang.Integer value) {
       validate(fields()[1], value);
       this.postalCode = value;
       fieldSetFlags()[1] = true;
@@ -331,7 +332,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
       * Clears the value of the 'postalCode' field.
       * @return This builder.
       */
-    public io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder clearPostalCode() {
+    public io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder clearPostalCode() {
       postalCode = null;
       fieldSetFlags()[1] = false;
       return this;
@@ -351,7 +352,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
       * @param value The value of 'city'.
       * @return This builder.
       */
-    public io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder setCity(java.lang.CharSequence value) {
+    public io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder setCity(java.lang.CharSequence value) {
       validate(fields()[2], value);
       this.city = value;
       fieldSetFlags()[2] = true;
@@ -371,7 +372,7 @@ public class AddressEntry extends org.apache.avro.specific.SpecificRecordBase im
       * Clears the value of the 'city' field.
       * @return This builder.
       */
-    public io.openmessaging.benchmark.driver.pravega.testobj.generated.AddressEntry.Builder clearCity() {
+    public io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry.Builder clearCity() {
       city = null;
       fieldSetFlags()[2] = false;
       return this;

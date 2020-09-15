@@ -1,0 +1,25 @@
+{
+  "userId" : "Iu6AxdBYGR4A0wspR9BYHA",
+  "name" : "Greg Egan",
+  "biography" : {
+    "string" : "Greg Egan was born 20 August 1961. Egan is an Australian science fiction writer and amateur mathematician, best known for his works of hard science fiction. Egan has won multiple awards including the John W. Campbell Memorial Award, the Hugo Award, and the Locus Award. Egan holds a Bachelor of Science degree in Mathematics from the University of Western Australia.[3][4][5]\n"
+  },
+  "eventTimestamp" : {
+    "long" : 1600185024280
+  },
+  "keyValues" : {
+    "array" : [ {
+      "name" : "Name",
+      "value" : "Greg Egan"
+    } ]
+  },
+  "keyValues2" : null,
+  "keyValues3" : null,
+  "address" : {
+    "streetAddress" : "4/19 Gardner Road",
+    "postalCode" : {
+      "int" : 5018
+    },
+    "city" : "Perth"
+  }
+}

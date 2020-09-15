@@ -21,7 +21,8 @@ package io.openmessaging.benchmark.worker;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.primitives.Longs;
-import io.openmessaging.benchmark.driver.pravega.testobj.generated.User;
+import io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkProducer;
+import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
@@ -209,7 +210,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
             rateLimiter.setRate(producerWorkAssignment.publishRate);
         }
         log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
-        BenchmarkProducer producer = producers.get(0);
+        BenchmarkProducer producer0 = producers.get(0);
 
         if (producerWorkAssignment.schemaFile != null) {
             String payloadJSON = FileUtils.readFileToString(new File(producerWorkAssignment.payloadFile), "UTF-8");
@@ -218,18 +219,21 @@ public class LocalWorker implements Worker, ConsumerCallback {
             SpecificDatumReader<User> reader = new SpecificDatumReader<>(User.class);
             User user = reader.read(null, decoder);
 
-            payloadSize = producer.getPayloadLengthFromEvent(user);
+            payloadSize = producer0.getPayloadLengthFromEvent(user);
+            for (BenchmarkProducer producer: producers) {
+                User newUser = User.newBuilder(user).build();
+                ((PravegaBenchmarkProducer)producer).setPayload(newUser);
+            }
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
                             .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
-                    .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor,
-                            user, payloadSize));
+                    .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor, payloadSize));
 
         } else {
             final PayloadReader payloadReader = new FilePayloadReader(producerWorkAssignment.messageSize);
             byte[] payload = payloadReader.load(producerWorkAssignment.payloadFile);
-            payloadSize = producer.getPayloadLength(payload);
+            payloadSize = producer0.getPayloadLength(payload);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
@@ -248,7 +252,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
     }
 
     private void submitProducersToExecutor(Map<BenchmarkProducer, KeyDistributor> producersWithKeyDistributor,
-           Object payloadData, long payloadSize) {
+            long payloadSize) {
         executor.submit(() -> {
             log.info("submitProducersToExecutor: # producers={}", producersWithKeyDistributor.size());
             try {
@@ -258,7 +262,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
                             rateLimiter.acquire();
                         }
                         final long sendTime = System.nanoTime();
-                        producer.sendAsync(Optional.ofNullable(producersKeyDistributor.next()), payloadData)
+                        producer.sendAsync(Optional.ofNullable(producersKeyDistributor.next()), null)
                                 .thenRun(() -> {
                             messagesSent.increment();
                             totalMessagesSent.increment();
