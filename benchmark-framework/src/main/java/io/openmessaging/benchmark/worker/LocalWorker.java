@@ -262,7 +262,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
                             rateLimiter.acquire();
                         }
                         final long sendTime = System.nanoTime();
-                        producer.sendAsync(Optional.ofNullable(producersKeyDistributor.next()), null)
+                        producer.sendAsync(Optional.ofNullable(producersKeyDistributor.next()))
                                 .thenRun(() -> {
                             messagesSent.increment();
                             totalMessagesSent.increment();
