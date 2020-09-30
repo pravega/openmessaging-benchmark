@@ -30,9 +30,9 @@
     <artifactId>driver-pravega</artifactId>
 
     <properties>
-        <!--Specify pravegaVersion in properties or use default: 0.7.1-->
+        <!--Specify pravegaVersion in properties or use default: 0.8.0-->
         <!--Provide Pravega version for build: mvn clean install  "-DpravegaVersion=0.8.0-2508.30406cf-SNAPSHOT" -DskipTests=true -Dlicense.skip=true-->
-        <pravegaVersion>0.7.1</pravegaVersion>
+        <pravegaVersion>0.8.0</pravegaVersion>
     </properties>
 
     <repositories>
@@ -62,7 +62,7 @@
         <dependency>
             <groupId>io.pravega</groupId>
             <artifactId>pravega-keycloak-client</artifactId>
-            <version>0.6.1</version>
+            <version>0.8.0</version>
         </dependency>
 
         <dependency>
