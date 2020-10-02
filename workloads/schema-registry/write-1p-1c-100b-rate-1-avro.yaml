@@ -1,0 +1,12 @@
+name: 100b 1 topic 1 partition untrottled rate 3 min avro format
+topics: 1
+partitionsPerTopic: 1
+messageSize: 100
+payloadFile: payload/schema-registry/avro/data.100
+schemaFile : workloads/schema-registry/user.avsc
+subscriptionsPerTopic: 0
+consumerPerSubscription: 0
+producersPerTopic: 1
+producerRate: -1
+consumerBacklogSizeGB: 0
+testDurationMinutes: 3

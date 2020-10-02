@@ -61,6 +61,9 @@ public class Benchmark {
                 "--workers-file" }, description = "Path to a YAML file containing the list of workers addresses")
         public File workersFile;
 
+        @Parameter(names = { "-o", "--output" }, description = "Output", required = false)
+        public String output;
+
         @Parameter(description = "Workloads", required = true)
         public List<String> workloads;
     }
@@ -141,7 +144,8 @@ public class Benchmark {
 
                     TestResult result = generator.run();
 
-                    String fileName = String.format("%s-%s-%s.json", workloadName, driverConfiguration.name,
+                    boolean useOutput = (arguments.output != null) && (arguments.output.length() > 0);
+                    String fileName = useOutput? arguments.output: String.format("%s-%s-%s.json", workloadName, driverConfiguration.name,
                             dateFormat.format(new Date()));
 
                     log.info("Writing test result into {}", fileName);
