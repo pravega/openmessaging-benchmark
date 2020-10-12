@@ -20,7 +20,7 @@ package io.openmessaging.benchmark.driver.pravega;
 
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
-import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
+import io.openmessaging.benchmark.driver.pravega.schema.common.EventTimeStampAware;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
 import io.pravega.client.stream.*;
@@ -86,7 +86,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
 
     public PravegaBenchmarkConsumer(String streamName, String scopeName, String subscriptionName, ConsumerCallback consumerCallback,
                                     EventStreamClientFactory clientFactory, ReaderGroupManager readerGroupManager,
-                                    boolean includeTimestampInEvent, Serializer<User> deserializer) {
+                                    boolean includeTimestampInEvent, Serializer deserializer) {
         log.info("PravegaBenchmarkConsumer: BEGIN: subscriptionName={}, streamName={}", subscriptionName, streamName);
         // Create reader group if it doesn't already exist.
         final ReaderGroupConfig readerGroupConfig = ReaderGroupConfig.builder()
@@ -94,7 +94,7 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
                 .build();
         readerGroupManager.createReaderGroup(subscriptionName, readerGroupConfig);
 
-        reader = clientFactory.<User>createReader(
+        reader = clientFactory.createReader(
                 UUID.randomUUID().toString(),
                 subscriptionName,
                 deserializer,
@@ -105,16 +105,15 @@ public class PravegaBenchmarkConsumer implements BenchmarkConsumer {
         this.executor.submit(() -> {
             while (!closed.get()) {
                 try {
-                    final User event = (User) reader.readNextEvent(1000).getEvent();
+                    final EventTimeStampAware event = (EventTimeStampAware) reader.readNextEvent(1000).getEvent();
                     if (event != null) {
                         long eventTimestamp;
-                        if (includeTimestampInEvent) { // todo
+                        if (includeTimestampInEvent) {
                             eventTimestamp = event.getEventTimestamp();
                         } else {
                             // This will result in an invalid end-to-end latency measurement of 0 seconds.
                             eventTimestamp = TimeUnit.MICROSECONDS.toMillis(Long.MAX_VALUE);
                         }
-                        // todo use consumerCallback.messageReceived with payload as byte[]
                         consumerCallback.eventReceived(eventTimestamp);
                     }
                 } catch (ReinitializationRequiredException e) {

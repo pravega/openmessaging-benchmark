@@ -21,12 +21,18 @@ package io.openmessaging.benchmark.worker;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.primitives.Longs;
+import io.openmessaging.benchmark.driver.kafka.KafkaBenchmarkDriver;
+import io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver;
 import io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkProducer;
+import io.openmessaging.benchmark.driver.pravega.schema.common.EventTimeStampAware;
+import io.openmessaging.benchmark.driver.pravega.schema.common.UnsupportedSerializationFormatException;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
+import io.openmessaging.benchmark.driver.pravega.schema.json.JSONUser;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +48,9 @@ import java.util.stream.Collectors;
 import io.openmessaging.benchmark.utils.payload.FilePayloadReader;
 import io.openmessaging.benchmark.utils.payload.PayloadReader;
 import io.openmessaging.benchmark.worker.commands.*;
+import io.pravega.client.stream.Serializer;
+import io.pravega.client.stream.impl.ByteBufferSerializer;
+import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import org.HdrHistogram.Recorder;
 import org.apache.avro.Schema;
 import org.apache.avro.io.DecoderFactory;
@@ -52,6 +61,7 @@ import org.apache.bookkeeper.stats.NullStatsLogger;
 import org.apache.bookkeeper.stats.OpStatsLogger;
 import org.apache.bookkeeper.stats.StatsLogger;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.core.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +125,12 @@ public class LocalWorker implements Worker, ConsumerCallback {
     private boolean testCompleted = false;
 
     private boolean consumersArePaused = false;
+    // Fields for Schema-registry support
+    private SerializationFormat serializationFormat;
+    private boolean need2ProbeProducers = true;
+    private File schemaFile;
+    private Serializer serializer;
+    private boolean timestampIncludedInEvent;
 
     public LocalWorker() {
         this(NullStatsLogger.INSTANCE);
@@ -149,6 +165,20 @@ public class LocalWorker implements Worker, ConsumerCallback {
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
+        if (benchmarkDriver instanceof KafkaBenchmarkDriver) {
+            this.need2ProbeProducers = true;
+        } else if ((benchmarkDriver instanceof PravegaBenchmarkDriver) && (((PravegaBenchmarkDriver) benchmarkDriver).isSchemaRegistryEnabled())) {
+            PravegaBenchmarkDriver pravegaBenchmarkDriver = ((PravegaBenchmarkDriver) benchmarkDriver);
+            this.serializationFormat = pravegaBenchmarkDriver.getSerializationFormat();
+            Assert.requireNonEmpty(this.serializationFormat, "Need serialization format defined in PravegaBenchmarkDriver when schema-registry support is enabled");
+            this.schemaFile = pravegaBenchmarkDriver.getSchemaFile();
+            this.need2ProbeProducers = false;
+            this.serializer = pravegaBenchmarkDriver.getSerializer();
+            this.timestampIncludedInEvent = pravegaBenchmarkDriver.isTimestampIncludedInEvent();
+        } else {
+            this.serializer = new ByteBufferSerializer();
+        }
+
     }
 
     @Override
@@ -210,30 +240,50 @@ public class LocalWorker implements Worker, ConsumerCallback {
             rateLimiter.setRate(producerWorkAssignment.publishRate);
         }
         log.info("rateLimiterEnabled={}, publishRate={}", rateLimiterEnabled, producerWorkAssignment.publishRate);
-        BenchmarkProducer producer0 = producers.get(0);
 
-        if (producerWorkAssignment.schemaFile != null) {
-            String payloadJSON = FileUtils.readFileToString(new File(producerWorkAssignment.payloadFile), "UTF-8");
-            Schema schema = new Schema.Parser().parse(new File(producerWorkAssignment.schemaFile));
-            JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, payloadJSON);
-            SpecificDatumReader<User> reader = new SpecificDatumReader<>(User.class);
-            User user = reader.read(null, decoder);
+        if (this.serializationFormat != null) {
+            log.info("Starting load with schema-registry support, serialization format {}", this.serializationFormat);
+            EventTimeStampAware user;
 
-            payloadSize = producer0.getPayloadLengthFromEvent(user);
-            for (BenchmarkProducer producer: producers) {
-                User newUser = User.newBuilder(user).build();
-                ((PravegaBenchmarkProducer)producer).setPayload(newUser);
+            if (serializationFormat == SerializationFormat.Avro) {
+                Schema schema = new Schema.Parser().parse(this.schemaFile);
+                String payloadJSON = FileUtils.readFileToString(new File(producerWorkAssignment.payloadFile), "UTF-8");
+                JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, payloadJSON);
+                SpecificDatumReader<User> reader = new SpecificDatumReader<>(User.class);
+                User payload = reader.read(null, decoder);
+                user = payload;
+                for (BenchmarkProducer producer: producers) {
+                    User newUser = User.newBuilder(payload).build();
+                    ((PravegaBenchmarkProducer)producer).setPayload(newUser);
+                }
+            } else if (serializationFormat == SerializationFormat.Json) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JSONUser payload = null;
+                for (BenchmarkProducer producer: producers) {
+                    payload = objectMapper.readValue(new File(producerWorkAssignment.payloadFile), JSONUser.class);
+                    ((PravegaBenchmarkProducer)producer).setPayload(payload);
+                }
+                user = payload;
+            } else {
+                throw new UnsupportedSerializationFormatException(serializationFormat);
             }
+
+            if (this.timestampIncludedInEvent) {
+                user.setEventTimestamp(System.currentTimeMillis());
+            }
+            ByteBuffer serialized = serializer.serialize(user);
+            this.payloadSize = serialized.limit();
+            log.info("Using payload file={} payloadSize={} bytes, message size: {}", producerWorkAssignment.payloadFile, payloadSize, producerWorkAssignment.messageSize);
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
                             .collect(Collectors.toMap(Function.identity(), assignKeyDistributor)))
                     .forEach(producersWithKeyDistributor -> submitProducersToExecutor(producersWithKeyDistributor, payloadSize));
-
         } else {
             final PayloadReader payloadReader = new FilePayloadReader(producerWorkAssignment.messageSize);
             byte[] payload = payloadReader.load(producerWorkAssignment.payloadFile);
-            payloadSize = producer0.getPayloadLength(payload);
+            ByteBuffer serialized = serializer.serialize(payload);
+            this.payloadSize = serialized.limit();
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()
@@ -241,14 +291,19 @@ public class LocalWorker implements Worker, ConsumerCallback {
                     .forEach(producersWithKeyDistributor -> submitProducersToExecutorWithBytePayload(producersWithKeyDistributor,
                             payload));
         }
-        log.info("Using payload file={} payloadSize={} bytes", producerWorkAssignment.payloadFile, payloadSize);
+
+        if (payloadSize != producerWorkAssignment.messageSize) {
+            log.warn("Payload {} is serialized into {} bytes, message size is {}", producerWorkAssignment.payloadFile, payloadSize, producerWorkAssignment.messageSize);
+        }
+
     }
 
     @Override
-    public void probeProducers() throws IOException {
-        //todo uncomment
-        producers.forEach(
-                producer -> producer.sendAsync(Optional.of("key"), new byte[10]).thenRun(() -> totalMessagesSent.increment()));
+    public void probeProducers() {
+        if (need2ProbeProducers) {
+            producers.forEach(
+                    producer -> producer.sendAsync(Optional.of("key"), new byte[10]).thenRun(totalMessagesSent::increment));
+        }
     }
 
     private void submitProducersToExecutor(Map<BenchmarkProducer, KeyDistributor> producersWithKeyDistributor,
@@ -267,7 +322,7 @@ public class LocalWorker implements Worker, ConsumerCallback {
                             messagesSent.increment();
                             totalMessagesSent.increment();
                             messagesSentCounter.inc();
-                            // todo need serializer
+
                             bytesSent.add(payloadSize);
                             bytesSentCounter.add(payloadSize);
 

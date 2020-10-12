@@ -34,11 +34,6 @@ public class Workload {
     public int messageSize;
 
     public String payloadFile;
-    /**
-     * TODO:
-     * Required if using schema registy
-     */
-    public String schemaFile;
 
     public int subscriptionsPerTopic;
 

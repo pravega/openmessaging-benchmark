@@ -5,7 +5,7 @@
  */
 package io.openmessaging.benchmark.driver.pravega.schema.generated.avro;
 
-import org.apache.avro.generic.GenericArray;
+import io.openmessaging.benchmark.driver.pravega.schema.common.EventTimeStampAware;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.util.Utf8;
 import org.apache.avro.message.BinaryMessageEncoder;
@@ -13,7 +13,7 @@ import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
-public class User extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
+public class User extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord, EventTimeStampAware {
   private static final long serialVersionUID = 7820250504031892698L;
   public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"io.openmessaging.benchmark.driver.pravega.schema.generated.avro\",\"fields\":[{\"name\":\"userId\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"biography\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"eventTimestamp\",\"type\":[\"null\",\"long\"],\"default\":null},{\"name\":\"keyValues\",\"type\":[\"null\",{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"KeyValue\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"string\"}]}}]},{\"name\":\"keyValues2\",\"type\":[\"null\",{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"KeyValue2\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"string\"}]}}]},{\"name\":\"keyValues3\",\"type\":[\"null\",{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"KeyValue3\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"string\"}]}}]},{\"name\":\"address\",\"type\":{\"type\":\"record\",\"name\":\"AddressEntry\",\"fields\":[{\"name\":\"streetAddress\",\"type\":\"string\"},{\"name\":\"postalCode\",\"type\":[\"null\",\"int\"],\"default\":null},{\"name\":\"city\",\"type\":\"string\"}]}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
@@ -1092,7 +1092,7 @@ public class User extends org.apache.avro.specific.SpecificRecordBase implements
             long size2 = in.readArrayStart();
             java.util.List<io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue3> a2 = this.keyValues3;
             if (a2 == null) {
-              a2 = new SpecificData.Array<io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue3>((int)size2, SCHEMA$.getField("keyValues3").schema().getTypes().get(1));
+              a2 = new SpecificData.Array<io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue3>((int)size2, SCHEMA$.getField("KeyValues3").schema().getTypes().get(1));
               this.keyValues3 = a2;
             } else a2.clear();
             SpecificData.Array<io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue3> ga2 = (a2 instanceof SpecificData.Array ? (SpecificData.Array<io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue3>)a2 : null);

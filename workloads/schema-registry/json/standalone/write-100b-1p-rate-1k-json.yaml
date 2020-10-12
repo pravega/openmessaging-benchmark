@@ -1,0 +1,11 @@
+name: 100b 1 topic 1 partition rate 1k 1 min json format
+topics: 1
+partitionsPerTopic: 1
+messageSize: 100
+payloadFile: payload/schema-registry/json/jsonuser-payload-100.json
+subscriptionsPerTopic: 0
+consumerPerSubscription: 0
+producersPerTopic: 1
+producerRate: 1000
+consumerBacklogSizeGB: 0
+testDurationMinutes: 1

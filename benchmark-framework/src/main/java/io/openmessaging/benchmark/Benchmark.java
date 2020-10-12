@@ -132,6 +132,7 @@ public class Benchmark {
                     File driverConfigFile = new File(driverConfig);
                     DriverConfiguration driverConfiguration = mapper.readValue(driverConfigFile,
                             DriverConfiguration.class);
+
                     log.info("--------------- WORKLOAD : {} --- DRIVER : {}---------------", workload.name,
                             driverConfiguration.name);
 
@@ -140,7 +141,7 @@ public class Benchmark {
 
                     worker.initializeDriver(driverConfigFile);
 
-                    WorkloadGenerator generator = new WorkloadGenerator(driverConfiguration.name, workload, worker);
+                    WorkloadGenerator generator = new WorkloadGenerator(driverConfiguration.name, driverConfiguration.driverClass, workload, worker);
 
                     TestResult result = generator.run();
 

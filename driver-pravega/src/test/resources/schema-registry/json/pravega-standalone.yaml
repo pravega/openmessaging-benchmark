@@ -1,0 +1,19 @@
+client:
+  controllerURI: tcp://localhost:9090
+  scopeName: schemaregistry
+
+writer:
+  enableConnectionPooling: False
+
+includeTimestampInEvent: True
+enableStreamAutoScaling: False
+eventsPerSecond: 10000
+
+enableSchemaRegistry: True
+schemaRegistry:
+  schemaRegistryURI: http://localhost:9092
+  groupId: jsonuser1
+  version:
+    type: JSONUser
+    version: 2
+    id: 3

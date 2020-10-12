@@ -40,11 +40,12 @@ public interface Worker extends AutoCloseable {
 
     void createConsumers(ConsumerAssignment consumerAssignment) throws IOException;
 
+    /**
+     *  This is work around the fact that there's no way to have a consumer ready in Kafka without first publishing
+     *  some message on the topic, which will then trigger the partitions assignment to the consumers
+     * @throws IOException
+     */
     void probeProducers() throws IOException;
-
-    default void probeProducers(Object event) throws IOException {
-        throw new UnsupportedOperationException("Schema registry not supported for this driver");
-    }
 
     void startLoad(ProducerWorkAssignment producerWorkAssignment) throws IOException;
 

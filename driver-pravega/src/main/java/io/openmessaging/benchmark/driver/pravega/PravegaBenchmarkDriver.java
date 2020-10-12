@@ -22,13 +22,17 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.BenchmarkDriver;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
+import io.openmessaging.benchmark.driver.pravega.schema.common.EventTimeStampAware;
+import io.openmessaging.benchmark.driver.pravega.schema.common.UnsupportedSerializationFormatException;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
+import io.openmessaging.benchmark.driver.pravega.schema.json.JSONUser;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
@@ -36,12 +40,15 @@ import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.ScalingPolicy;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.StreamConfiguration;
+import io.pravega.client.stream.impl.ByteBufferSerializer;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
+import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.serializer.avro.schemas.AvroSchema;
+import io.pravega.schemaregistry.serializer.json.schemas.JSONSchema;
 import io.pravega.schemaregistry.serializer.shared.impl.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
-import org.apache.avro.Schema;
+import lombok.Getter;
 import org.apache.bookkeeper.stats.StatsLogger;
 import org.junit.Assert;
 import org.slf4j.Logger;
@@ -51,6 +58,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -62,12 +71,22 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
 
     private PravegaConfig config;
     private ClientConfig clientConfig;
-    private Serializer<User> serializer, deserializer;
     private String scopeName;
     private StreamManager streamManager;
     private ReaderGroupManager readerGroupManager;
     private EventStreamClientFactory clientFactory;
     private final List<String> createdTopics = new ArrayList<>();
+    // for Schema-registry support
+    @Getter
+    private Serializer serializer, deserializer;
+    @Getter
+    private boolean schemaRegistryEnabled;
+    @Getter
+    private SerializationFormat serializationFormat;
+    @Getter
+    private File schemaFile;
+    @Getter
+    private boolean timestampIncludedInEvent;
 
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException, URISyntaxException {
@@ -82,10 +101,17 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         readerGroupManager = ReaderGroupManager.withScope(scopeName, clientConfig);
         clientFactory = EventStreamClientFactory.withScope(scopeName, clientConfig);
 
+        this.timestampIncludedInEvent = config.includeTimestampInEvent;
+
         if (config.enableSchemaRegistry) {
             SchemaRegistryConfig schemaRegistryConfig = config.schemaRegistry;
-            log.info("schemaRegistryConfig: {}", schemaRegistryConfig); // todo remove
-            SchemaRegistryClientConfig config = null;
+            log.info("schemaRegistryConfig: {}", schemaRegistryConfig);
+            this.schemaRegistryEnabled = true;
+            this.serializationFormat = schemaRegistryConfig.serializationFormat;
+            Assert.assertFalse("Do not yet support both transactions with schema registry", config.enableTransaction);
+            Assert.assertNotNull("If schema-registry support is enabled, need to specify supported serializationFormat: Avro, Json or Protobuf", this.serializationFormat);
+
+            SchemaRegistryClientConfig config;
             // create serializer and deserializer
             try {
                 config = SchemaRegistryClientConfig.builder()
@@ -95,17 +121,33 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
                 throw e;
             }
 
-            SerializerConfig serializerConfig = SerializerConfig.builder()
-                    .groupId(schemaRegistryConfig.groupId).registryConfig(config)
-                    .createGroup(SerializationFormat.Avro).registerSchema(true)
-                    .build();
-            AvroSchema<User> schema = AvroSchema.of(User.class);
+            if (this.serializationFormat == SerializationFormat.Avro) {
+                SerializerConfig serializerConfig = SerializerConfig.builder()
+                        .groupId(schemaRegistryConfig.groupId).registryConfig(config)
+                        .createGroup(SerializationFormat.Avro).registerSchema(true)
+                        .build();
+                AvroSchema<User> schema = AvroSchema.of(User.class);
+                this.serializer = SerializerFactory.avroSerializer(serializerConfig, schema);
+                this.deserializer = SerializerFactory.avroDeserializer(serializerConfig, schema);
 
-            serializer = SerializerFactory
-                    .avroSerializer(serializerConfig, schema);
+                String schemaFile = schemaRegistryConfig.schemaFile;
+                Assert.assertTrue(String.format("Schema file %s is not readable", schemaFile), Files.isReadable(Paths.get(schemaFile)));
+                this.schemaFile = new File(schemaFile);
 
-            deserializer = SerializerFactory.avroDeserializer(
-                    serializerConfig, schema);
+            } else if (this.serializationFormat == SerializationFormat.Json) {
+                SerializerConfig serializerConfig = SerializerConfig.builder()
+                        .groupId(schemaRegistryConfig.groupId).registryConfig(config)
+                        .createGroup(SerializationFormat.Json, Compatibility.allowAny(), true).registerSchema(true)
+                        .build();
+                JSONSchema<JSONUser> schema = JSONSchema.of(JSONUser.class);
+                this.serializer = SerializerFactory.jsonSerializer(serializerConfig, schema);
+                this.deserializer = SerializerFactory.jsonDeserializer(serializerConfig, schema);
+            } else {
+                throw new UnsupportedSerializationFormatException(serializationFormat);
+            }
+        } else {
+            this.serializer = new ByteBufferSerializer();
+            this.deserializer = new ByteBufferSerializer();
         }
     }
 
@@ -160,13 +202,9 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
             producer = new PravegaBenchmarkTransactionProducer(topic, clientFactory, config.includeTimestampInEvent,
                     config.writer.enableConnectionPooling, config.eventsPerTransaction);
         } else {
-            if (config.enableSchemaRegistry) {
-                producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
+            producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
                         config.writer.enableConnectionPooling, serializer);
-            } else {
-                producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
-                        config.writer.enableConnectionPooling);
-            }
+
         }
         return CompletableFuture.completedFuture(producer);
     }

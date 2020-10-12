@@ -12,11 +12,12 @@ writer:
 includeTimestampInEvent: True
 enableStreamAutoScaling: False
 eventsPerSecond: 10000
-# TODO: comment schema registry params
+# Pravega schema-registry configuration
 enableSchemaRegistry: True
 schemaRegistry:
+  serializationFormat: Avro
   schemaRegistryURI: http://localhost:9092
-  schemaFile: "workloads/schema-registry/user.avsc"
+  schemaFile: "workloads/schema-registry/avro/user.avsc"
   groupId: avrouser1
   version:
     type: User

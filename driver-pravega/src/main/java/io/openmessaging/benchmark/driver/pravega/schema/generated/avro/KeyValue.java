@@ -15,7 +15,7 @@ import org.apache.avro.message.SchemaStore;
 @org.apache.avro.specific.AvroGenerated
 public class KeyValue extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
   private static final long serialVersionUID = 3877342106303931869L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"KeyValue\",\"namespace\":\"io.openmessaging.benchmark.driver.pravega.schema.generated.avro\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"string\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"JSONKeyValue\",\"namespace\":\"io.openmessaging.benchmark.driver.pravega.schema.generated.avro\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"string\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -52,7 +52,7 @@ public class KeyValue extends org.apache.avro.specific.SpecificRecordBase implem
   }
 
   /**
-   * Serializes this KeyValue to a ByteBuffer.
+   * Serializes this JSONKeyValue to a ByteBuffer.
    * @return a buffer holding the serialized data for this instance
    * @throws java.io.IOException if this instance could not be serialized
    */
@@ -61,9 +61,9 @@ public class KeyValue extends org.apache.avro.specific.SpecificRecordBase implem
   }
 
   /**
-   * Deserializes a KeyValue from a ByteBuffer.
+   * Deserializes a JSONKeyValue from a ByteBuffer.
    * @param b a byte buffer holding serialized data for an instance of this class
-   * @return a KeyValue instance decoded from the given buffer
+   * @return a JSONKeyValue instance decoded from the given buffer
    * @throws java.io.IOException if the given bytes could not be deserialized into an instance of this class
    */
   public static KeyValue fromByteBuffer(
@@ -147,17 +147,17 @@ public class KeyValue extends org.apache.avro.specific.SpecificRecordBase implem
   }
 
   /**
-   * Creates a new KeyValue RecordBuilder.
-   * @return A new KeyValue RecordBuilder
+   * Creates a new JSONKeyValue RecordBuilder.
+   * @return A new JSONKeyValue RecordBuilder
    */
   public static io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue.Builder newBuilder() {
     return new io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue.Builder();
   }
 
   /**
-   * Creates a new KeyValue RecordBuilder by copying an existing Builder.
+   * Creates a new JSONKeyValue RecordBuilder by copying an existing Builder.
    * @param other The existing builder to copy.
-   * @return A new KeyValue RecordBuilder
+   * @return A new JSONKeyValue RecordBuilder
    */
   public static io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue.Builder newBuilder(io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue.Builder other) {
     if (other == null) {
@@ -168,9 +168,9 @@ public class KeyValue extends org.apache.avro.specific.SpecificRecordBase implem
   }
 
   /**
-   * Creates a new KeyValue RecordBuilder by copying an existing KeyValue instance.
+   * Creates a new JSONKeyValue RecordBuilder by copying an existing JSONKeyValue instance.
    * @param other The existing instance to copy.
-   * @return A new KeyValue RecordBuilder
+   * @return A new JSONKeyValue RecordBuilder
    */
   public static io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue.Builder newBuilder(io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue other) {
     if (other == null) {
@@ -181,7 +181,7 @@ public class KeyValue extends org.apache.avro.specific.SpecificRecordBase implem
   }
 
   /**
-   * RecordBuilder for KeyValue instances.
+   * RecordBuilder for JSONKeyValue instances.
    */
   @org.apache.avro.specific.AvroGenerated
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<KeyValue>
@@ -212,7 +212,7 @@ public class KeyValue extends org.apache.avro.specific.SpecificRecordBase implem
     }
 
     /**
-     * Creates a Builder by copying an existing KeyValue instance
+     * Creates a Builder by copying an existing JSONKeyValue instance
      * @param other The existing instance to copy.
      */
     private Builder(io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue other) {

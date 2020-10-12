@@ -1,0 +1,11 @@
+name: 100KB 1 topic 1 partition untrottled rate 3 min json format
+topics: 1
+partitionsPerTopic: 1
+messageSize: 100000
+payloadFile: /tmp/test/data/data.100000
+subscriptionsPerTopic: 0
+consumerPerSubscription: 0
+producersPerTopic: 1
+producerRate: -1
+consumerBacklogSizeGB: 0
+testDurationMinutes: 3

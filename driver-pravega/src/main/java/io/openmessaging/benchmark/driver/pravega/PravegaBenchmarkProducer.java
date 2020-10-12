@@ -19,12 +19,12 @@
 package io.openmessaging.benchmark.driver.pravega;
 
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
+import io.openmessaging.benchmark.driver.pravega.schema.common.EventTimeStampAware;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventStreamWriter;
 import io.pravega.client.stream.EventWriterConfig;
 import io.pravega.client.stream.Serializer;
-import io.pravega.client.stream.impl.ByteBufferSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
@@ -38,13 +38,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private final Serializer serializer;
     private final boolean includeTimestampInEvent;
     private ByteBuffer timestampAndPayload;
-    private User user;
-
-    public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
-                                    boolean includeTimestampInEvent,
-                                    boolean enableConnectionPooling) {
-        this(streamName, clientFactory, includeTimestampInEvent, enableConnectionPooling, new ByteBufferSerializer());
-    }
+    private EventTimeStampAware eventTimeStampAwarePayload;
 
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
@@ -60,8 +54,8 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         this.includeTimestampInEvent = includeTimestampInEvent;
     }
 
-    public void setPayload(User user) {
-        this.user = user;
+    public void setPayload(EventTimeStampAware eventTimeStampAwarePayload) {
+        this.eventTimeStampAwarePayload = eventTimeStampAwarePayload;
     }
 
     @Override
@@ -74,29 +68,10 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
 
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key) {
-        // TODO fix for abstract object
         if (includeTimestampInEvent) {
-            user.setEventTimestamp(System.currentTimeMillis());
+            eventTimeStampAwarePayload.setEventTimestamp(System.currentTimeMillis());
         }
-        return writeObjectEvent(key, user);
-    }
-
-    @Override
-    public int getPayloadLengthFromEvent(Object payload) { //TODO
-        if (includeTimestampInEvent) {
-            User user = (User) payload;
-            user.setEventTimestamp(System.currentTimeMillis());
-        }
-        ByteBuffer byteBuffer = serializer.serialize(payload);
-        return byteBuffer.array().length;
-    }
-
-    @Override
-    public int getPayloadLength(byte[] payload) { //TODO
-        if (includeTimestampInEvent) {
-            return includeTimestampInPayload(payload).array().length;
-        }
-        return payload.length;
+        return writeObjectEvent(key, eventTimeStampAwarePayload);
     }
 
     private ByteBuffer includeTimestampInPayload(byte[] payload) {
@@ -109,8 +84,12 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         return timestampAndPayload;
     }
 
-    private CompletableFuture<Void> writeObjectEvent(Optional<String> key, User payload) {
-        return (key.isPresent()) ? writer.writeEvent(key.get(), payload) : writer.writeEvent(payload);
+    private CompletableFuture<Void> writeObjectEvent(Optional<String> key, EventTimeStampAware eventTimeStampAwarePayload) {
+        if (key.isPresent()) {
+            return writer.writeEvent(key.get(), eventTimeStampAwarePayload);
+        } else {
+            return writer.writeEvent(eventTimeStampAwarePayload);
+        }
     }
 
     private CompletableFuture<Void> writeEvent(Optional<String> key, ByteBuffer payload) {

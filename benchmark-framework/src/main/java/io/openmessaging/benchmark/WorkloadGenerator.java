@@ -19,6 +19,8 @@
 package io.openmessaging.benchmark;
 
 import com.google.common.math.Stats;
+import io.openmessaging.benchmark.driver.BenchmarkDriver;
+import io.openmessaging.benchmark.driver.kafka.KafkaBenchmarkDriver;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
 import java.io.*;
@@ -42,6 +44,7 @@ import io.openmessaging.benchmark.worker.Worker;
 public class WorkloadGenerator implements AutoCloseable {
 
     private final String driverName;
+    private final String driverClassName;
     private final Workload workload;
     private final Worker worker;
 
@@ -53,10 +56,11 @@ public class WorkloadGenerator implements AutoCloseable {
 
     private volatile double targetPublishRate;
 
-    public WorkloadGenerator(String driverName, Workload workload, Worker worker) {
+    public WorkloadGenerator(String driverName, String driverClassName, Workload workload, Worker worker) {
         this.driverName = driverName;
         this.workload = workload;
         this.worker = worker;
+        this.driverClassName = driverClassName;
 
         if (workload.consumerBacklogSizeGB > 0 && workload.producerRate == 0) {
             throw new IllegalArgumentException("Cannot probe producer sustainable rate when building backlog");
@@ -70,9 +74,11 @@ public class WorkloadGenerator implements AutoCloseable {
 
         createConsumers(topics);
         createProducers(topics);
-        // todo check for schema registry
-        if (workload.schemaFile == null) {
-            log.info("Ensure topics are ready");
+
+        // This is work around the fact that there's no way to have a consumer ready in Kafka without first publishing
+        // some message on the topic, which will then trigger the partitions assignment to the consumers
+        BenchmarkDriver benchmarkDriver = (BenchmarkDriver) Class.forName(this.driverClassName).newInstance();
+        if (benchmarkDriver instanceof KafkaBenchmarkDriver) {
             ensureTopicsAreReady();
         }
 
@@ -96,7 +102,6 @@ public class WorkloadGenerator implements AutoCloseable {
         }
         ProducerWorkAssignment producerWorkAssignment = new ProducerWorkAssignment();
         producerWorkAssignment.payloadFile = workload.payloadFile;
-        producerWorkAssignment.schemaFile = workload.schemaFile;
         producerWorkAssignment.messageSize = workload.messageSize;
         producerWorkAssignment.keyDistributorType = workload.keyDistributor;
         producerWorkAssignment.publishRate = targetPublishRate;
@@ -135,14 +140,7 @@ public class WorkloadGenerator implements AutoCloseable {
         int expectedMessages = workload.topics * workload.subscriptionsPerTopic;
 
         // In this case we just publish 1 message and then wait for consumers to receive the data
-        if (workload.schemaFile == null) {
-            worker.probeProducers();
-        } else { // todo fix for generic schema
-//            User user = new User();
-//            user.setName("name");
-//            user.setUserId("testId");
-//            worker.probeProducers(user);
-        }
+        worker.probeProducers();
 
         while (true) {
             CountersStats stats = worker.getCountersStats();
