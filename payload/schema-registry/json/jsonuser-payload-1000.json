@@ -1,0 +1,26 @@
+{
+  "userId" : "1",
+  "name" : "G.E",
+  "address" : [ {
+    "postalCode" : 1
+  } ],
+  "age" : 0,
+  "eventTimestamp" : 1602153368633,
+  "keyValues" : [ {
+    "name" : "CNXfa[iUfWO_NzEH[KIeioXGWNVHuRfZHqiBoUSzDNcCQJ[RAakY^T]fZyeaDBtaCBUknbsrPRCwugvGFnYKl",
+    "value" : "AgzQBjZXxArYWLpfLEYRcQ\\cxSOIDbQzLEAE``WEyjU_WnEPSBnbwaPZWmEgHk_u^VYFzsvCkZYFHghINiZn^"
+  }, {
+    "name" : "MWPvKkjqgfaJZHApin_TkQXaLSioO][ORojQgXlAZrLcW[KVTZabkTDxhig\\xDW\\j`vxVItiqZqYWt[jAtUim",
+    "value" : "Rd^hSzUwENLnelNnFVGIMI]FsjW[wbVVALTNFufZ`ELlQMqrAWPk`FIRntVyMCFjVB^JXrTiKcMsBDMJxB]R["
+  }, {
+    "name" : "mRQcJrDwsVObtf\\dVmtTvKVZp[alebDOJZf[SkZtbaCQyJpmrvsxUDzq[V[PgHhRnpPSMfhCLZe[LcgyNVyNz",
+    "value" : "z[TTpi\\iFuOhCFe`uVWpbksATezLa^hS^VzIPujCjrm`sdnyrEytQxTT``GeLQZQb]j]otPHoEfYlaYn_EvjQ"
+  } ],
+  "keyValues2" : [ {
+    "name" : "AtZuwyjTvEKhGkugwJMXj`USJgDagPPppOUbQ_Asf[MyHSopzny]wQ_ssna",
+    "value" : "y\\yrLQd^nRSoAFzjHEXOgkeRhxq]EAzqFrkJbQxN`zPVowQCEZT`HYaVmzO"
+  }, {
+    "name" : "DvhX\\[OvU_qDtT^iLLvoiBR\\JfrHMeNWZ]qumQmSHpaYjUT]RgFL`ecRx\\T",
+    "value" : "WGZtqLeyp]`JyTHzAdglmRhG`^lCtUfH_adCtztKDfOtttQnYTyaPLn\\kXr"
+  } ]
+}

@@ -1,0 +1,9 @@
+{
+  "userId" : "1",
+  "name" : "G.E",
+  "address" : [ {
+    "postalCode" : 1
+  } ],
+  "age" : 0,
+  "eventTimestamp" : 1602078096000
+}
