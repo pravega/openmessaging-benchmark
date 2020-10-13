@@ -55,30 +55,30 @@
         </repository>
     </repositories>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.avro</groupId>
-                <artifactId>avro-maven-plugin</artifactId>
-                <version>${avroVersion}</version>
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>schema</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>${project.basedir}/src/test/resources/schema-registry/avro/</sourceDirectory>
-                            <includes>
-                                <include>*.avsc</include>
-                            </includes>
-                            <outputDirectory>${project.basedir}/src/main/java/</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+<!--    <build>-->
+<!--        <plugins>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.avro</groupId>-->
+<!--                <artifactId>avro-maven-plugin</artifactId>-->
+<!--                <version>${avroVersion}</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <phase>generate-sources</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>schema</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <sourceDirectory>${project.basedir}/src/test/resources/schema-registry/avro/</sourceDirectory>-->
+<!--                            <includes>-->
+<!--                                <include>*.avsc</include>-->
+<!--                            </includes>-->
+<!--                            <outputDirectory>${project.basedir}/src/main/java/</outputDirectory>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
+<!--    </build>-->
 
 
     <dependencies>
