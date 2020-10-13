@@ -1,0 +1,24 @@
+name: Pravega
+driverClass: io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver
+
+# Pravega client-specific configuration
+client:
+  controllerURI: tcp://pravega-pravega-controller:9090
+  scopeName: schemaregistryjson
+
+writer:
+  enableConnectionPooling: False
+
+includeTimestampInEvent: True
+enableStreamAutoScaling: False
+eventsPerSecond: 10000
+# Pravega schema-registry configuration
+enableSchemaRegistry: True
+schemaRegistry:
+  serializationFormat: Json
+  schemaRegistryURI: http://schemaregistry-schema-registry:9092
+  groupId: jsonuser1
+  version:
+    type: JSONUser
+    version: 1
+    id: 1
