@@ -35,6 +35,7 @@ eventsPerSecond: 10000
 # Schema registry configuration
 enableSchemaRegistry: True
 schemaRegistry:
+  serializationFormat: Avro
   schemaRegistryURI: http://schemaregistry-schema-registry:9092
   schemaFile: "workloads/schema-registry/avro/user.avsc"
   groupId: avrouser1
