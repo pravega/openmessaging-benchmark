@@ -21,12 +21,15 @@ package io.openmessaging.benchmark.worker;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.primitives.Longs;
+import com.google.protobuf.util.JsonFormat;
 import io.openmessaging.benchmark.driver.kafka.KafkaBenchmarkDriver;
 import io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver;
 import io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkProducer;
 import io.openmessaging.benchmark.driver.pravega.schema.common.EventTimeStampAware;
+import io.openmessaging.benchmark.driver.pravega.schema.common.InvalidPayloadSerializedSizeException;
 import io.openmessaging.benchmark.driver.pravega.schema.common.UnsupportedSerializationFormatException;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
+import io.openmessaging.benchmark.driver.pravega.schema.generated.protobuf.Protobuf;
 import io.openmessaging.benchmark.driver.pravega.schema.json.JSONUser;
 import io.openmessaging.benchmark.utils.RandomGenerator;
 
@@ -259,11 +262,21 @@ public class LocalWorker implements Worker, ConsumerCallback {
             } else if (serializationFormat == SerializationFormat.Json) {
                 ObjectMapper objectMapper = new ObjectMapper();
                 JSONUser payload = null;
-                for (BenchmarkProducer producer: producers) {
+                for (BenchmarkProducer producer : producers) {
                     payload = objectMapper.readValue(new File(producerWorkAssignment.payloadFile), JSONUser.class);
-                    ((PravegaBenchmarkProducer)producer).setPayload(payload);
+                    ((PravegaBenchmarkProducer) producer).setPayload(payload);
                 }
                 user = payload;
+            } else if (serializationFormat == SerializationFormat.Protobuf) {
+                Protobuf.PBUser.Builder builder = Protobuf.PBUser.newBuilder();
+                try (FileReader fileReader = new FileReader(producerWorkAssignment.payloadFile)) {
+                    JsonFormat.parser().merge(fileReader, builder);
+                }
+                for (BenchmarkProducer producer : producers) {
+                    Protobuf.PBUser payload = Protobuf.PBUser.newBuilder(builder.build()).build();
+                    ((PravegaBenchmarkProducer) producer).setPayload(payload);
+                }
+                user = builder.build();
             } else {
                 throw new UnsupportedSerializationFormatException(serializationFormat);
             }
@@ -274,6 +287,10 @@ public class LocalWorker implements Worker, ConsumerCallback {
             ByteBuffer serialized = serializer.serialize(user);
             this.payloadSize = serialized.limit();
             log.info("Using payload file={} payloadSize={} bytes, message size: {}", producerWorkAssignment.payloadFile, payloadSize, producerWorkAssignment.messageSize);
+            if (payloadSize != producerWorkAssignment.messageSize) {
+                log.error("Payload {} is serialized into {} bytes, message size is {}", producerWorkAssignment.payloadFile, payloadSize, producerWorkAssignment.messageSize);
+                throw new InvalidPayloadSerializedSizeException(serializationFormat, producerWorkAssignment.payloadFile, payloadSize, producerWorkAssignment.messageSize);
+            }
 
             Lists.partition(producers, producersPerProcessor).stream()
                     .map(producersPerThread -> producersPerThread.stream()

@@ -159,7 +159,7 @@ public class AvroSerializerIntegrationTest {
 
     @Ignore
     @Test
-    public void testGenerateJSON() throws IOException, NoSuchAlgorithmException {
+    public void testGenerateAvro() throws IOException, NoSuchAlgorithmException {
         // ~10000 bytes
         //generateUser(10000, serializer, 125, 10, 10, 12);
         // 10005 bytes

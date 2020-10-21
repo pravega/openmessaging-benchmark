@@ -33,7 +33,7 @@
         <!--Specify pravegaVersion in properties or use default: 0.7.1-->
         <!--Provide Pravega version for build: mvn clean install  "-DpravegaVersion=0.8.0" -DskipTests=true -Dlicense.skip=true-->
         <pravegaVersion>0.8.0</pravegaVersion>
-        <schemaRegisryVersion>0.2.0-38.97a58e3-SNAPSHOT</schemaRegisryVersion>
+        <schemaRegisryVersion>0.2.0-40.0149f53-SNAPSHOT</schemaRegisryVersion>
         <avroVersion>1.9.2</avroVersion>
         <keycloakVersion>0.7.0-13.8cd1997-SNAPSHOT</keycloakVersion>
     </properties>
@@ -79,7 +79,6 @@
 <!--            </plugin>-->
 <!--        </plugins>-->
 <!--    </build>-->
-
 
     <dependencies>
         <dependency>
@@ -169,6 +168,21 @@
             <groupId>io.pravega</groupId>
             <artifactId>schemaregistry-serializers-json</artifactId>
             <version>${schemaRegisryVersion}</version>
+        </dependency>
+
+        <!-- schema-registry protobuf -->
+
+        <dependency>
+            <groupId>io.pravega</groupId>
+            <artifactId>schemaregistry-serializers-protobuf</artifactId>
+            <version>${schemaRegisryVersion}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java-util -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>3.11.4</version>
         </dependency>
 
         <!-- schema-registry samples -->

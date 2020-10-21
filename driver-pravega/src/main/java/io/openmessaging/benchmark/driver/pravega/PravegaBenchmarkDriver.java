@@ -22,16 +22,15 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import io.openmessaging.benchmark.driver.BenchmarkConsumer;
 import io.openmessaging.benchmark.driver.BenchmarkDriver;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.openmessaging.benchmark.driver.ConsumerCallback;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
-import io.openmessaging.benchmark.driver.pravega.schema.common.EventTimeStampAware;
 import io.openmessaging.benchmark.driver.pravega.schema.common.UnsupportedSerializationFormatException;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
+import io.openmessaging.benchmark.driver.pravega.schema.generated.protobuf.Protobuf;
 import io.openmessaging.benchmark.driver.pravega.schema.json.JSONUser;
 import io.pravega.client.ClientConfig;
 import io.pravega.client.EventStreamClientFactory;
@@ -46,6 +45,7 @@ import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.serializer.avro.schemas.AvroSchema;
 import io.pravega.schemaregistry.serializer.json.schemas.JSONSchema;
+import io.pravega.schemaregistry.serializer.protobuf.schemas.ProtobufSchema;
 import io.pravega.schemaregistry.serializer.shared.impl.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
 import lombok.Getter;
@@ -142,6 +142,14 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
                 JSONSchema<JSONUser> schema = JSONSchema.of(JSONUser.class);
                 this.serializer = SerializerFactory.jsonSerializer(serializerConfig, schema);
                 this.deserializer = SerializerFactory.jsonDeserializer(serializerConfig, schema);
+            } else if (this.serializationFormat == SerializationFormat.Protobuf) {
+                SerializerConfig serializerConfig = SerializerConfig.builder()
+                        .groupId(schemaRegistryConfig.groupId).registryConfig(config)
+                        .createGroup(SerializationFormat.Protobuf, Compatibility.allowAny(), true).registerSchema(true)
+                        .build();
+                ProtobufSchema<Protobuf.PBUser> schema = ProtobufSchema.of(Protobuf.PBUser.class);
+                serializer = SerializerFactory.protobufSerializer(serializerConfig, schema);
+                deserializer = SerializerFactory.protobufDeserializer(serializerConfig, schema);
             } else {
                 throw new UnsupportedSerializationFormatException(serializationFormat);
             }

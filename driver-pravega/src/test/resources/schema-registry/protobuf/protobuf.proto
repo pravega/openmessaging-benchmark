@@ -1,0 +1,25 @@
+syntax = "proto3";
+package io.openmessaging.benchmark.driver.pravega.schema.generated.protobuf;
+
+message PBUser {
+    string userId = 1;
+    string name = 2;
+    string biography = 3;
+    int64 eventTimestampInner = 4;
+    int32 age = 5;
+    repeated PBAddressEntry address = 6;
+    repeated PBKeyValue keyValues = 7;
+    repeated PBKeyValue keyValues2 = 8;
+    repeated PBKeyValue keyValues3 = 9;
+}
+
+message PBKeyValue {
+    string name = 1;
+    string value = 2;
+}
+
+message PBAddressEntry {
+    string streetAddress = 1;
+    string city = 2;
+    int32 postalCode = 3;
+}

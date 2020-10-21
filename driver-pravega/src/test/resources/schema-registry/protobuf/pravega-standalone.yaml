@@ -1,0 +1,20 @@
+client:
+  controllerURI: tcp://localhost:9090
+  scopeName: schemaregistry
+
+writer:
+  enableConnectionPooling: False
+
+includeTimestampInEvent: True
+enableStreamAutoScaling: False
+eventsPerSecond: 10000
+
+enableSchemaRegistry: True
+schemaRegistry:
+  serializationFormat: Protobuf
+  schemaRegistryURI: http://localhost:9092
+  groupId: protouser1
+  version:
+    type: PTUser
+    version: 1
+    id: 1
