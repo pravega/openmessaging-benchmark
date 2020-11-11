@@ -28,7 +28,7 @@ public class RandomStringUtils {
 
     public static String generateRandomString3(int size)  {
         UniformRandomProvider rng = RandomSource.create(RandomSource.MT);
-        RandomStringGenerator generator = new RandomStringGenerator.Builder().withinRange().usingRandom(rng::nextInt).build();
+        RandomStringGenerator generator = new RandomStringGenerator.Builder().withinRange('A', 'Z').usingRandom(rng::nextInt).build();
         String s = generator.generate(size);
         int payload = s.getBytes(StandardCharsets.UTF_8).length;
         Assert.assertEquals(size, payload);

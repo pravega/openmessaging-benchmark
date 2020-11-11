@@ -2,17 +2,26 @@ package io.openmessaging.benchmark.driver.pravega.schemaregistry.integration.tes
 
 import io.openmessaging.benchmark.driver.pravega.AvroUtils;
 import io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver;
+import io.openmessaging.benchmark.driver.pravega.PravegaStandaloneUtils;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.AddressEntry;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.KeyValue;
 import io.openmessaging.benchmark.driver.pravega.schema.generated.avro.User;
+import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.Serializer;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
+
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.serializer.avro.schemas.AvroSchema;
 import io.pravega.schemaregistry.serializer.shared.impl.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.server.rest.RestServer;
+import io.pravega.schemaregistry.server.rest.ServiceConfig;
+import io.pravega.schemaregistry.service.SchemaRegistryService;
+import io.pravega.schemaregistry.storage.SchemaStore;
+import io.pravega.schemaregistry.storage.SchemaStoreFactory;
+import io.pravega.test.common.TestUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.io.DatumWriter;
@@ -21,10 +30,9 @@ import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.util.RandomData;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,14 +41,16 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.Iterator;
-
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 
 @Slf4j
-@Ignore
-public class AvroSerializerIntegrationTest {
+public class AvroSerializerIntegrationTest implements Closeable {
 
     private final static String resourcesPath = "src/test/resources/schema-registry/avro";
+    private final RestServer restServer;
+    private final ScheduledExecutorService executor;
 
     private final User user1000 = User.newBuilder()
             .setUserId("Iu6AxdBYGR4A0wspR9BYHA")
@@ -71,8 +81,31 @@ public class AvroSerializerIntegrationTest {
     private Schema schema;
     private Serializer<User> serializer, deserializer;
 
-    @Before
-    public void init() throws IOException, URISyntaxException {
+
+    public AvroSerializerIntegrationTest() throws IOException {
+        PravegaStandaloneUtils pravegaStandaloneUtils = PravegaStandaloneUtils.startPravega();
+        executor = Executors.newScheduledThreadPool(10);
+
+        ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create(pravegaStandaloneUtils.getControllerURI())).build();
+
+        SchemaStore schemaStore = SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+
+        SchemaRegistryService service = new SchemaRegistryService(schemaStore, executor);
+        int port = TestUtils.getAvailableListenPort();
+        ServiceConfig serviceConfig = ServiceConfig.builder().port(port).build();
+
+        restServer = new RestServer(service, serviceConfig);
+        restServer.startAsync();
+        restServer.awaitRunning();
+
+        String driverConfigFile = resourcesPath + "/pravega-standalone.yaml";
+        File driverfile = new File(driverConfigFile);
+        PravegaConfig driverConfig = PravegaBenchmarkDriver.readConfig(driverfile);
+        SchemaRegistryConfig schemaRegistryConfig = driverConfig.schemaRegistry;
+
+        String schemaRegistryURI = "http://localhost:" + port;
+        SchemaRegistryClientConfig config = SchemaRegistryClientConfig.builder().schemaRegistryUri(URI.create(schemaRegistryURI)).build();
+
         String schemaFile = resourcesPath + "/user.avsc";
         try {
             schema = new Schema.Parser().parse(new File(schemaFile));
@@ -80,23 +113,14 @@ public class AvroSerializerIntegrationTest {
             log.error("Schema {} is invalid", schemaFile);
             throw e;
         }
-        String driverConfigFile = resourcesPath + "/pravega-standalone.yaml";
-        File driverfile = new File(driverConfigFile);
-        PravegaConfig driverConfig = PravegaBenchmarkDriver.readConfig(driverfile);
-        SchemaRegistryConfig schemaRegistryConfig = driverConfig.schemaRegistry;
-        SchemaRegistryClientConfig config;
-        try {
-            config = SchemaRegistryClientConfig.builder()
-                    .schemaRegistryUri(new URI(schemaRegistryConfig.schemaRegistryURI)).build();
-        } catch (URISyntaxException e) {
-            log.error("schemaRegistryURI {} is invalid.", schemaRegistryConfig.schemaRegistryURI, e);
-            throw e;
-        }
         // Create serializer and deserializer
         SerializerConfig serializerConfig = SerializerConfig.builder()
                 .groupId(schemaRegistryConfig.groupId).registryConfig(config)
                 .createGroup(SerializationFormat.Avro).registerSchema(true)
                 .build();
+
+        log.info("serializerConfig: {}", serializerConfig);
+
         AvroSchema<User> schema = AvroSchema.of(User.class);
         this.serializer = SerializerFactory
                 .avroSerializer(serializerConfig, schema);
@@ -115,7 +139,6 @@ public class AvroSerializerIntegrationTest {
         writer.write(generated, encoder);
         encoder.flush();
         fout.close();
-
     }
 
     @Test
@@ -128,9 +151,8 @@ public class AvroSerializerIntegrationTest {
         fout.close();
     }
 
-    @Ignore
     @Test
-    public void testWithStandalonePravega() throws IOException, URISyntaxException {
+    public void testPayloadSize() throws IOException, URISyntaxException {
         Assert.assertEquals("Payload size should be 100b",100,
                 serializeAvroWithStandalonePravega(
                         resourcesPath + "/payload/user-payload-100.json",
@@ -157,13 +179,12 @@ public class AvroSerializerIntegrationTest {
         return AvroUtils.INSTANCE.serializeAvro(payloadFile, schema, serializer, deserializer , serializeTimes);
     }
 
-    @Ignore
     @Test
-    public void testGenerateAvro() throws IOException, NoSuchAlgorithmException {
+    public void testGeneratePayload() throws IOException, NoSuchAlgorithmException {
         // ~10000 bytes
-        //generateUser(10000, serializer, 125, 10, 10, 12);
+        AvroUtils.INSTANCE.generateUser(10000, serializer, 125, 10, 10, 12, 0, 0);
         // 10005 bytes
-        //generateUser(100000, serializer, 500, 99, 100, 2, 11, 4);
+        AvroUtils.INSTANCE.generateUser(100000, serializer, 500, 99, 100, 2, 11, 4);
         // 100,000 bytes
         AvroUtils.INSTANCE.generateUser(1000000, serializer, 1000, 301, 500, 400, 250, 104);
     }
@@ -178,4 +199,10 @@ public class AvroSerializerIntegrationTest {
         AvroUtils.INSTANCE.serializeByte(resourcesPath + "/payload/payload-100b.data", 100);
     }
 
+    @Override
+    public void close() {
+        restServer.stopAsync();
+        restServer.awaitTerminated();
+        executor.shutdownNow();
+    }
 }

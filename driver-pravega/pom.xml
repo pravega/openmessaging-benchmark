@@ -201,6 +201,28 @@
             <version>1.4</version>
         </dependency>
 
+        <!-- schema-registry integration tests -->
+        <dependency>
+            <groupId>io.pravega</groupId>
+            <artifactId>pravega-standalone</artifactId>
+            <version>${pravegaVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.pravega</groupId>
+            <artifactId>pravega-test-testcommon</artifactId>
+            <version>${pravegaVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.pravega</groupId>
+            <artifactId>schemaregistry-server</artifactId>
+            <version>${schemaRegisryVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- schema-registry end -->
 
         <dependency>

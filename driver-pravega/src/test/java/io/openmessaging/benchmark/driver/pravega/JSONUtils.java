@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static io.openmessaging.benchmark.driver.pravega.RandomStringUtils.generateRandomString2;
+import static io.openmessaging.benchmark.driver.pravega.RandomStringUtils.generateRandomString3;
 
 @Slf4j
 public class JSONUtils {
@@ -30,22 +31,22 @@ public class JSONUtils {
         List<JSONKeyValue> keyValues = new LinkedList<>();
 
         for (int i=0; i < values; i++) {
-            String name = generateRandomString2(valueSize);
-            String value = generateRandomString2(valueSize);
+            String name = generateRandomString3(valueSize);
+            String value = generateRandomString3(valueSize);
             JSONKeyValue keyValue = JSONKeyValue.builder().name(name).value(value).build();
             keyValues.add(keyValue);
         }
         List<JSONKeyValue> keyValues2 = new LinkedList<>();
         for (int i=0; i < values2; i++) {
-            String name = generateRandomString2(valueSize2);
-            String value = generateRandomString2(valueSize2);
+            String name = generateRandomString3(valueSize2);
+            String value = generateRandomString3(valueSize2);
             JSONKeyValue keyValue2 = JSONKeyValue.builder().name(name).value(value).build();
             keyValues2.add(keyValue2);
         }
         List<JSONKeyValue> keyValues3 = new LinkedList<>();
         for (int i=0; i < values3; i++) {
-            String name = generateRandomString2(valueSize3);
-            String value = generateRandomString2(valueSize3);
+            String name = generateRandomString3(valueSize3);
+            String value = generateRandomString3(valueSize3);
             JSONKeyValue keyValue3 = JSONKeyValue.builder().name(name).value(value).build();
             keyValues3.add(keyValue3);
         }

@@ -3,22 +3,30 @@ package io.openmessaging.benchmark.driver.pravega.schemaregistry.integration.tes
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openmessaging.benchmark.driver.pravega.JSONUtils;
 import io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver;
+import io.openmessaging.benchmark.driver.pravega.PravegaStandaloneUtils;
 import io.openmessaging.benchmark.driver.pravega.config.PravegaConfig;
 import io.openmessaging.benchmark.driver.pravega.config.SchemaRegistryConfig;
+import io.openmessaging.benchmark.driver.pravega.schema.generated.protobuf.Protobuf;
 import io.openmessaging.benchmark.driver.pravega.schema.json.JSONUser;
+import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.Serializer;
 import io.pravega.schemaregistry.client.SchemaRegistryClientConfig;
 import io.pravega.schemaregistry.contract.data.Compatibility;
 import io.pravega.schemaregistry.contract.data.SerializationFormat;
 import io.pravega.schemaregistry.serializer.json.schemas.JSONSchema;
+import io.pravega.schemaregistry.serializer.protobuf.schemas.ProtobufSchema;
 import io.pravega.schemaregistry.serializer.shared.impl.SerializerConfig;
 import io.pravega.schemaregistry.serializers.SerializerFactory;
+import io.pravega.schemaregistry.server.rest.RestServer;
+import io.pravega.schemaregistry.server.rest.ServiceConfig;
+import io.pravega.schemaregistry.service.SchemaRegistryService;
+import io.pravega.schemaregistry.storage.SchemaStore;
+import io.pravega.schemaregistry.storage.SchemaStoreFactory;
+import io.pravega.test.common.TestUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.Timeout;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,35 +36,45 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Ignore
-public class JSONSerializerIntegrationTest {
+public class JSONSerializerIntegrationTest implements AutoCloseable {
 
     private final static String resourcesPath = "src/test/resources/schema-registry/json";
-
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Serializer<JSONUser> serializer, deserializer;
+    private final RestServer restServer;
+    private final ScheduledExecutorService executor;
+    @Rule
+    public Timeout globalTimeout = new Timeout(3, TimeUnit.MINUTES);
 
-    private final JSONSchema<JSONUser> schema = JSONSchema.of(JSONUser.class);
+    public JSONSerializerIntegrationTest() throws IOException {
+        PravegaStandaloneUtils pravegaStandaloneUtils = PravegaStandaloneUtils.startPravega();
+        executor = Executors.newScheduledThreadPool(10);
 
-    private final String driverConfigFile = resourcesPath + "/pravega-standalone.yaml";
-    private Serializer<JSONUser> serializer, deserializer;
+        ClientConfig clientConfig = ClientConfig.builder().controllerURI(URI.create(pravegaStandaloneUtils.getControllerURI())).build();
 
-    @Before
-    public void prepareTest() throws IOException, URISyntaxException {
+        SchemaStore schemaStore = SchemaStoreFactory.createPravegaStore(clientConfig, executor);
+
+        SchemaRegistryService service = new SchemaRegistryService(schemaStore, executor);
+        int port = TestUtils.getAvailableListenPort();
+        ServiceConfig serviceConfig = ServiceConfig.builder().port(port).build();
+
+        restServer = new RestServer(service, serviceConfig);
+        restServer.startAsync();
+        restServer.awaitRunning();
+
+        String driverConfigFile = resourcesPath + "/pravega-standalone.yaml";
         File driverfile = new File(driverConfigFile);
         PravegaConfig driverConfig = PravegaBenchmarkDriver.readConfig(driverfile);
         SchemaRegistryConfig schemaRegistryConfig = driverConfig.schemaRegistry;
 
-        SchemaRegistryClientConfig config;
-        try {
-            config = SchemaRegistryClientConfig.builder()
-                    .schemaRegistryUri(new URI(schemaRegistryConfig.schemaRegistryURI)).build();
-        } catch (URISyntaxException e) {
-            log.error("schemaRegistryURI {} is invalid.", schemaRegistryConfig.schemaRegistryURI, e);
-            throw e;
-        }
+        String schemaRegistryURI = "http://localhost:" + port;
+        SchemaRegistryClientConfig config = SchemaRegistryClientConfig.builder().schemaRegistryUri(URI.create(schemaRegistryURI)).build();
+
         // Create serializer and deserializer
         SerializerConfig serializerConfig = SerializerConfig.builder()
                 .groupId(schemaRegistryConfig.groupId).registryConfig(config)
@@ -65,23 +83,23 @@ public class JSONSerializerIntegrationTest {
 
         log.info("serializerConfig: {}", serializerConfig);
 
+        final JSONSchema<JSONUser> schema = JSONSchema.of(JSONUser.class);
         serializer = SerializerFactory.jsonSerializer(serializerConfig, schema);
         deserializer = SerializerFactory.jsonDeserializer(serializerConfig, schema);
     }
 
-    @Ignore
     @Test
     public void testGenerateJSON() throws IOException, URISyntaxException, NoSuchAlgorithmException {
         //100 bytes
-        //checkGeneratedUser(100, serializer, 0, 0, 0, 0, 0, 0, false);
+        checkGeneratedUser(100, serializer, 0, 0, 0, 0, 0, 0, false);
         //1000 bytes
-        //checkGeneratedUser(1000, serializer, 85, 3, 59, 2, 0, 0, true);
+        checkGeneratedUser(1002, serializer, 85, 3, 62, 2, 0, 0, false);
         // 10007 bytes
-        //checkGeneratedUser(10007, serializer, 100, 24, 100, 19, 49, 1, true);
+        checkGeneratedUser(10003, serializer, 100, 24, 100, 19, 56, 2, false);
         // 100000 bytes
-        //checkGeneratedUser(100000, serializer, 100, 240, 100, 180, 100, 21, true);
+        checkGeneratedUser(100048, serializer, 100, 240, 100, 183, 100, 25, false);
         // 1000,000 bytes
-        //checkGeneratedUser(1000000, serializer, 500, 300, 500, 300, 499, 362, true);
+        checkGeneratedUser(999914, serializer, 500, 315, 500, 301, 499, 362, false);
     }
 
     private void checkGeneratedUser(int messageSize, Serializer<JSONUser> serializer, int valueSize, int values, int valueSize2, int values2, int valueSize3, int values3, boolean writeToFile) throws IOException {
@@ -94,9 +112,8 @@ public class JSONSerializerIntegrationTest {
         Assert.assertEquals(String.format("Serialized to %db", messageSize), messageSize, payloadSize);
     }
 
-    @Ignore
     @Test
-    public void testWithStandalonePravega() throws IOException, URISyntaxException {
+    public void testPayloadSize() throws IOException, URISyntaxException {
         Assert.assertEquals("Payload size should be 100b",100,
                 serializeJSON(resourcesPath + "/payload/jsonuser-payload-100.json",
                         1));
@@ -145,6 +162,14 @@ public class JSONSerializerIntegrationTest {
     public JSONUser read(String payloadJSONFile) throws IOException {
         JSONUser payload = objectMapper.readValue(new File(payloadJSONFile), JSONUser.class);
         return payload;
+    }
+
+    @After
+    @Override
+    public void close()  {
+        restServer.stopAsync();
+        restServer.awaitTerminated();
+        executor.shutdownNow();
     }
 
 }
