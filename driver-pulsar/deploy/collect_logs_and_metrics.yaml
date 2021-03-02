@@ -1,0 +1,132 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+- name: Get current time
+  hosts: ["localhost"]
+  tags: ["always"]
+  become: false
+  tasks:
+    - set_fact:
+        output_dir: "../../data/pulsar_logs/pulsar_logs_{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Set output directory
+  hosts: ["all"]
+  tags: ["always"]
+  become: false
+  gather_facts: no
+  tasks:
+    - set_fact:
+        output_dir: "{{ hostvars['localhost'].output_dir }}"
+
+- name: Download Pulsar logs
+  hosts: ["pulsar"]
+  tags: ["pulsar"]
+  connection: ssh
+  become: true
+  tasks:
+    - set_fact:
+        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    - name: Compress logs
+      shell: "journalctl -u pulsar | gzip > /tmp/pulsar-{{ private_ip }}.log.gz"
+    - name: Download logs
+      fetch:
+        src: "/tmp/pulsar-{{ private_ip }}.log.gz"
+        dest: "{{ output_dir }}/pulsar-{{ private_ip }}.log.gz"
+        flat: yes
+
+
+- name: Download BookKeeper logs
+  hosts: ["pulsar"]
+  tags: ["pulsar"]
+  connection: ssh
+  become: true
+  tasks:
+    - set_fact:
+        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    - name: Compress logs
+      shell: "journalctl -u bookkeeper | gzip > /tmp/bookkeeper-{{ private_ip }}.log.gz"
+    - name: Download logs
+      fetch:
+        src: "/tmp/bookkeeper-{{ private_ip }}.log.gz"
+        dest: "{{ output_dir }}/bookkeeper-{{ private_ip }}.log.gz"
+        flat: yes
+
+- name: Download ZooKeeper logs
+  hosts: ["zookeeper"]
+  tags: ["zookeeper"]
+  connection: ssh
+  become: true
+  tasks:
+    - set_fact:
+        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    - name: Compress logs
+      shell: "journalctl -u zookeeper | gzip > /tmp/zookeeper-{{ private_ip }}.log.gz"
+    - name: Download logs
+      fetch:
+        src: "/tmp/zookeeper-{{ private_ip }}.log.gz"
+        dest: "{{ output_dir }}/zookeeper-{{ private_ip }}.log.gz"
+        flat: yes
+
+- name: Download Benchmark logs
+  hosts: ["client"]
+  tags: ["client"]
+  connection: ssh
+  become: true
+  tasks:
+    - set_fact:
+        private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    - name: Compress logs
+      shell: "journalctl -u benchmark-worker | gzip > /tmp/benchmark-worker-{{ private_ip }}.log.gz"
+    - name: Download logs
+      fetch:
+        src: "/tmp/benchmark-worker-{{ private_ip }}.log.gz"
+        dest: "{{ output_dir }}/benchmark-worker-{{ private_ip }}.log.gz"
+        flat: yes
+
+- name: Download Prometheus Metrics
+  hosts: ["metrics"]
+  tags: ["prometheus"]
+  connection: ssh
+  become: true
+  tasks:
+    - systemd:
+        name: "prometheus"
+        state: stopped
+    - name: Compress database
+      shell: "tar -czvf /tmp/prometheus.tgz /opt/prometheus"
+    - name: Download database
+      fetch:
+        src: "/tmp/prometheus.tgz"
+        dest: "{{ output_dir }}/prometheus.tgz"
+        flat: yes
+    - systemd:
+        name: "prometheus"
+        state: started
+
+- name: Show output directory
+  hosts: ["localhost"]
+  tags: ["always"]
+  become: false
+  tasks:
+    - shell: "ls -lhR {{ output_dir }}"
+      register: output_dir_ls
+    - debug:
+        var: output_dir_ls.stdout_lines
+    - debug:
+        msg: "Logs and metrics saved to: {{ output_dir }}"

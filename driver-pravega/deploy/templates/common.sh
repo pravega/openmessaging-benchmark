@@ -98,7 +98,6 @@ else
     -XX:MaxGCPauseMillis=10 \
     -XX:+ParallelRefProcEnabled \
     -XX:+UnlockExperimentalVMOptions \
-    -XX:+AggressiveOpts \
     -XX:+DoEscapeAnalysis \
     -XX:ParallelGCThreads=32 \
     -XX:ConcGCThreads=32 \

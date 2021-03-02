@@ -340,7 +340,7 @@
     - file: path=/opt/bookkeeper state=directory
     - name: Download BookKeeper binary package
       unarchive:
-        src: "https://archive.apache.org/dist/bookkeeper/bookkeeper-{{ bookkeeperVersion }}/bookkeeper-all-{{ bookkeeperVersion }}-bin.tar.gz"
+        src: "https://downloads.apache.org/bookkeeper/bookkeeper-{{ bookkeeperVersion }}/bookkeeper-all-{{ bookkeeperVersion }}-bin.tar.gz"
         remote_src: yes
         dest: /opt/bookkeeper
         extra_opts: ["--strip-components=1"]
@@ -359,11 +359,11 @@
       args:
         chdir: /opt/bookkeeper
       when: groups['bookkeeper'][0] == inventory_hostname
-    - name: Format BookKeeper local filesystem data
-      command: >
-        bin/bookkeeper shell bookieformat -nonInteractive --force -deleteCookie
-      args:
-        chdir: /opt/bookkeeper
+      #- name: Format BookKeeper local filesystem data
+      #command: >
+      #  bin/bookkeeper shell bookieformat -nonInteractive --force -deleteCookie
+      #args:
+      #  chdir: /opt/bookkeeper
     - name: Start iostat
       shell: nohup iostat -xdct 1 10000 >> /opt/iostat.log &
       args:
