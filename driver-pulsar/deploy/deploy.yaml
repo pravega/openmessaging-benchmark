@@ -60,7 +60,7 @@
       yum: pkg={{ item }} state=latest
       with_items:
           - wget
-          - java
+          - java-11
           - sysstat
           - vim
           - screen
@@ -87,7 +87,7 @@
     - set_fact:
         private_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         max_heap_memory: "6g"
-        max_direct_memory: "6g"
+        max_direct_memory: "24g"
         AWS_ACCESS_KEY: "{{ AWS_ACCESS_KEY }}"
         AWS_SECRET_KEY: "{{ AWS_SECRET_KEY }}"
     - template:

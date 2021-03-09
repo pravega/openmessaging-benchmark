@@ -3,7 +3,7 @@ Description=Pravega Segment Store
 After=network.target
 
 [Service]
-Environment="PRAVEGA_SEGMENTSTORE_OPTS=-Xms6G -Xmx6G -XX:MaxDirectMemorySize=20g"
+Environment="PRAVEGA_SEGMENTSTORE_OPTS=-Xms6G -Xmx6G -XX:MaxDirectMemorySize=24g"
 ExecStart=/opt/pravega/bin/pravega-segmentstore
 WorkingDirectory=/opt/pravega
 RestartSec=15s

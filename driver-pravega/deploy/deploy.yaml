@@ -41,8 +41,8 @@
         pravegaSrc: "https://github.com/pravega/pravega/releases/download/v{{ pravegaVersion }}/pravega-{{ pravegaVersion }}.tgz"
         pravegaSrcRemote: yes
         # Here is the file path for local Pravega build
-        # pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
-        # pravegaSrcRemote: no
+        #pravegaSrc: "../../../pravega/build/distributions/pravega-{{ pravegaVersion }}.tgz"
+        #pravegaSrcRemote: no
         pravegaContainerCount: "{{ segmentStoreCount|int * pravegaContainersPerSegmentStore|int }}"
 
 - name: Uninstall
@@ -88,7 +88,7 @@
       yum: pkg={{ item }} state=latest
       with_items:
         - chrony
-        - java
+        - java-11
         - nano
         - nc
         - nfs-utils
@@ -350,17 +350,24 @@
     - template:
         src: "templates/bkenv.sh"
         dest: "/opt/bookkeeper/conf/bkenv.sh"
+    - template:
+        src: "templates/common.sh"
+        dest: "/opt/bookkeeper/bin/common.sh"
     - name: Format BookKeeper metadata in Zookeeper
       command: >
         bin/bookkeeper shell metaformat -nonInteractive --force
       args:
         chdir: /opt/bookkeeper
       when: groups['bookkeeper'][0] == inventory_hostname
-    - name: Format BookKeeper local filesystem data
-      command: >
-        bin/bookkeeper shell bookieformat -nonInteractive --force -deleteCookie
+      #- name: Format BookKeeper local filesystem data
+      #command: >
+      #  bin/bookkeeper shell bookieformat -nonInteractive --force -deleteCookie
+      #args:
+      #  chdir: /opt/bookkeeper
+    - name: Start iostat
+      shell: nohup iostat -xdct 1 10000 >> /opt/iostat.log &
       args:
-        chdir: /opt/bookkeeper
+        executable: /bin/bash
     - name: Install bookkeeper systemd service
       template:
         src: "templates/bookkeeper.service"
@@ -438,7 +445,7 @@
     - file: path=/opt/benchmark state=directory
     - name: Copy benchmark code
       unarchive:
-        src: ../../package/target/openmessaging-benchmark-{{ benchmark_version }}-bin.tar.gz
+        src: ../../package/target/openmessaging-benchmark-0.0.1-SNAPSHOT-bin.tar.gz
         dest: /opt/benchmark
         extra_opts: ["--strip-components=1"]
     - file:
