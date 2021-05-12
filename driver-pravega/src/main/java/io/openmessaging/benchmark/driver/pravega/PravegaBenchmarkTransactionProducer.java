@@ -44,6 +44,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     // If null, a transaction has not been started.
     @GuardedBy("this")
     private Transaction<ByteBuffer> transaction;
+    private long txnTime;
     private final int eventsPerTransaction;
     private int eventCount = 0;
     private ByteBuffer timestampAndPayload;
@@ -51,6 +52,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
             boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
+        txnTime = (long) 0.0;
 
         final String writerId = UUID.randomUUID().toString();
         transactionWriter = clientFactory.createTransactionalEventWriter(writerId, streamName,
@@ -64,6 +66,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
             if (transaction == null) {
+                txnTime = System.currentTimeMillis();
                 transaction = transactionWriter.beginTxn();
             }
             if (includeTimestampInEvent) {
@@ -80,6 +83,8 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             if (++eventCount >= eventsPerTransaction) {
                 eventCount = 0;
                 transaction.commit();
+                txnTime = System.currentTimeMillis() - txnTime;
+                System.out.println("Transaction duration: " + txnTime + "ms");
                 transaction = null;
             }
         } catch (TxnFailedException e) {
