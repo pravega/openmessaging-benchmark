@@ -66,8 +66,8 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
             if (transaction == null) {
-                txnTime = System.currentTimeMillis();
                 transaction = transactionWriter.beginTxn();
+                txnTime = System.currentTimeMillis();
             }
             if (includeTimestampInEvent) {
                 if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
@@ -84,11 +84,16 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 eventCount = 0;
                 transaction.commit();
                 txnTime = System.currentTimeMillis() - txnTime;
-                log.info("Transaction ID {} duration {} status {}", transaction.getTxnId(), txnTime, transaction.checkStatus());
+                log.info("Transaction ID COMMITING {} duration {} status {}", transaction.getTxnId(), txnTime, transaction.checkStatus());
 
+                while(transaction.checkStatus() != Transaction.Status.COMMITTED) {
+                    Thread.sleep(20);
+                }
+                txnTime = System.currentTimeMillis() - txnTime;
+                log.info("Transaction ID COMMITED {} duration {} status {}", transaction.getTxnId(), txnTime, transaction.checkStatus());
                 transaction = null;
             }
-        } catch (TxnFailedException e) {
+        } catch (TxnFailedException | InterruptedException e) {
             throw new RuntimeException("Transaction Write data failed ", e);
         }
         CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
