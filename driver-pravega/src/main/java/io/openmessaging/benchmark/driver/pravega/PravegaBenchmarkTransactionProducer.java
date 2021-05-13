@@ -84,7 +84,8 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 eventCount = 0;
                 transaction.commit();
                 txnTime = System.currentTimeMillis() - txnTime;
-                System.out.println("Transaction duration: " + txnTime + "ms");
+                log.info("Transaction ID {} duration {} status {}", transaction.getTxnId(), txnTime, transaction.checkStatus());
+
                 transaction = null;
             }
         } catch (TxnFailedException e) {
