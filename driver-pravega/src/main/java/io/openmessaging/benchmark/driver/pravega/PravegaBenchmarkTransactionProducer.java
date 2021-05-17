@@ -47,6 +47,9 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     private final int eventsPerTransaction;
     private int eventCount = 0;
     private ByteBuffer timestampAndPayload;
+    // -- Additional measurements
+    private long stateChangedCommitting;
+    private long statedChangedCommitted;
 
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
             boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
@@ -65,6 +68,8 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         try {
             if (transaction == null) {
                 transaction = transactionWriter.beginTxn();
+                // Start measurement - wait until transaction is OPEN
+                this.stateChangedCommitting = this.getTimeStatusReached(transaction, Transaction.Status.OPEN);
             }
             if (includeTimestampInEvent) {
                 if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
@@ -80,6 +85,16 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             if (++eventCount >= eventsPerTransaction) {
                 eventCount = 0;
                 transaction.commit();
+                // Measure OPEN<->COMMITTING
+                final long beingCommittingTime = this.getTimeStatusReached(transaction, Transaction.Status.COMMITTING);
+                this.stateChangedCommitting = (beingCommittingTime - this.stateChangedCommitting) / (long) 1000000;
+
+                // Measure COMMITTING <-> COMMITTED in milliseconds
+                this.statedChangedCommitted = beingCommittingTime;
+                final long committedDoneTime = this.getTimeStatusReached(transaction, Transaction.Status.COMMITTED);
+                this.statedChangedCommitted = (committedDoneTime - this.statedChangedCommitted) / (long) 1000000;
+                log.info("Transaction-"+transaction.getTxnId() + "-COMMITING-" + this.stateChangedCommitting + "-COMMITTED-" + this.statedChangedCommitted);
+
                 transaction = null;
             }
         } catch (TxnFailedException e) {
@@ -106,5 +121,21 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             }
         }
         transactionWriter.close();
+    }
+
+    /**
+     * Ensures @param transaction reached given @param status
+     * @return system time when given status had been reached.
+     */
+    private long getTimeStatusReached(Transaction transaction, Transaction.Status status) {
+        while(transaction.checkStatus() != Transaction.Status.OPEN) {
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }
+        return System.nanoTime();;
     }
 }
