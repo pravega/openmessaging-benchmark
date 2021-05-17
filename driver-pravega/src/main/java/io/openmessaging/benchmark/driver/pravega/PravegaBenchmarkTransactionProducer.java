@@ -67,6 +67,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
             if (transaction == null) {
+                this.stateChangedCommitting = 0;
                 transaction = transactionWriter.beginTxn();
                 // Start measurement - wait until transaction is OPEN
                 this.stateChangedCommitting = this.getTimeStatusReached(transaction, Transaction.Status.OPEN);
@@ -128,7 +129,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
      * @return system time when given status had been reached.
      */
     private long getTimeStatusReached(Transaction transaction, Transaction.Status status) {
-        while(transaction.checkStatus() != Transaction.Status.OPEN) {
+        while(transaction.checkStatus() != status) {
             try {
                 Thread.sleep(1);
             } catch (InterruptedException e) {
@@ -136,6 +137,6 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 return 0;
             }
         }
-        return System.nanoTime();;
+        return System.nanoTime();
     }
 }
