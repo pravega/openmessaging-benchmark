@@ -94,7 +94,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 this.statedChangedCommitted = beingCommittingTime;
                 final long committedDoneTime = this.getTimeStatusReached(transaction, Transaction.Status.COMMITTED);
                 this.statedChangedCommitted = (committedDoneTime - this.statedChangedCommitted) / (long) 1000000;
-                log.info("Transaction-"+transaction.getTxnId() + "-COMMITING-" + this.stateChangedCommitting + "-COMMITTED-" + this.statedChangedCommitted);
+                log.info("Transaction---"+transaction.getTxnId() + "---COMMITTING---" + this.stateChangedCommitting + "---COMMITTED---" + this.statedChangedCommitted);
 
                 transaction = null;
             }
