@@ -71,7 +71,10 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 final long txnBeginEpoch = System.nanoTime();
                 transaction = transactionWriter.beginTxn();
                 // beginTxn() is Synchronous => do not wait for status OPEN implicitly
-                this.stateChangedOpenMs = (System.nanoTime() - txnBeginEpoch) / (long) 1000000;
+                final long stateChangedOpenEpoch = System.nanoTime();
+                this.stateChangedOpenMs = (stateChangedOpenEpoch - txnBeginEpoch) / (long) 1000000;
+                // Start timer for OPEN <-> COMMITTING
+                this.stateChangedCommittingMs = stateChangedOpenEpoch;
             }
             if (includeTimestampInEvent) {
                 if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
@@ -86,14 +89,12 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             }
             if (++eventCount >= eventsPerTransaction) {
                 eventCount = 0;
-                final long commitBeganEpoch = System.nanoTime();
                 transaction.commit();
                 final long commitFinishedEpoch = System.nanoTime();
-
                 final long committedStatusReceivedEpoch = this.getTimeStatusReached(transaction, Transaction.Status.COMMITTED);
 
                 // Measure OPEN<->COMMITTING
-                this.stateChangedCommittingMs = (commitFinishedEpoch - commitBeganEpoch) / (long) 1000000;
+                this.stateChangedCommittingMs = (commitFinishedEpoch - this.stateChangedCommittingMs) / (long) 1000000;
                 // Measure COMMITTING <-> COMMITTED in milliseconds
                 this.statedChangedCommittedMs = (committedStatusReceivedEpoch - commitFinishedEpoch) / (long) 1000000;
 
