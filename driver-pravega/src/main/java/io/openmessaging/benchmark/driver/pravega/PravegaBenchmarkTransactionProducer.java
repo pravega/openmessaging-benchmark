@@ -50,7 +50,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     // -- Additional measurements
     private long stateChangedOpenMs;
     private long stateChangedCommittingMs;
-    private long statedChangedCommitted;
+    private long statedChangedCommittedMs;
 
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
             boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
@@ -90,14 +90,16 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 transaction.commit();
                 final long commitFinishedEpoch = System.nanoTime();
 
-                final long committedDoneTime = this.getTimeStatusReached(transaction, Transaction.Status.COMMITTED);
+                final long committedStatusReceivedEpoch = this.getTimeStatusReached(transaction, Transaction.Status.COMMITTED);
+
                 // Measure OPEN<->COMMITTING
                 this.stateChangedCommittingMs = (commitFinishedEpoch - commitBeganEpoch) / (long) 1000000;
                 // Measure COMMITTING <-> COMMITTED in milliseconds
-                this.statedChangedCommitted = (committedDoneTime - commitFinishedEpoch) / (long) 1000000;
+                this.statedChangedCommittedMs = (committedStatusReceivedEpoch - commitFinishedEpoch) / (long) 1000000;
+
                 log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + this.stateChangedOpenMs +
                         "---COMMITTING---" + this.stateChangedCommittingMs + "---COMMITTED---" +
-                        this.statedChangedCommitted + "---EPOCH---" + System.currentTimeMillis());
+                        this.statedChangedCommittedMs + "---EPOCH---" + System.currentTimeMillis());
                 transaction = null;
             }
         } catch (TxnFailedException e) {
