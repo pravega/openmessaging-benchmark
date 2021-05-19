@@ -91,16 +91,34 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 eventCount = 0;
                 transaction.commit();
                 final long commitFinishedEpoch = System.nanoTime();
-                final long committedStatusReceivedEpoch = this.getTimeStatusReached(transaction, Transaction.Status.COMMITTED);
+                final long committingStartEpoch = this.stateChangedCommittingMs;
+                final long stateChangeDuratonNullToOpen = this.stateChangedOpenMs;
 
-                // Measure OPEN<->COMMITTING
-                this.stateChangedCommittingMs = (commitFinishedEpoch - this.stateChangedCommittingMs) / (long) 1000000;
-                // Measure COMMITTING <-> COMMITTED in milliseconds
-                this.statedChangedCommittedMs = (committedStatusReceivedEpoch - commitFinishedEpoch) / (long) 1000000;
+                // Run measurement of COMMIT <-> COMMITTED in separate thread
+                Thread committedMeasurement = new Thread(new Runnable() {
+                    private long nullToOpenDurationMs;
+                    private long commitFinished;
+                    private long committingStart;
+                    private Transaction<ByteBuffer> txn;
+                    @Override
+                    public void run() {
+                        this.nullToOpenDurationMs = stateChangeDuratonNullToOpen;
+                        this.commitFinished = commitFinishedEpoch;
+                        this.committingStart = committingStartEpoch;
+                        this.txn = transaction;
+                        final long committedStatusReceivedEpoch = getTimeStatusReached(this.txn, Transaction.Status.COMMITTED);
+                        // Measure OPEN<->COMMITTING
+                        final long committingTimeMs = (commitFinishedEpoch - this.committingStart) / (long) 1000000;
+                        // Measure COMMITTING <-> COMMITTED in milliseconds
+                        final long committedTimeEpoch = (committedStatusReceivedEpoch - this.commitFinished) / (long) 1000000;
 
-                log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + this.stateChangedOpenMs +
-                        "---COMMITTING---" + this.stateChangedCommittingMs + "---COMMITTED---" +
-                        this.statedChangedCommittedMs + "---EPOCH---" + System.currentTimeMillis());
+                        log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + this.nullToOpenDurationMs +
+                                "---COMMITTING---" + committingTimeMs + "---COMMITTED---" +
+                                committedTimeEpoch + "---EPOCH---" + System.currentTimeMillis());
+                    }
+                });
+                committedMeasurement.start();
+
                 transaction = null;
             }
         } catch (TxnFailedException e) {
