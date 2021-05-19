@@ -18,6 +18,7 @@
  */
 package io.openmessaging.benchmark.driver.pravega;
 
+import com.squareup.okhttp.Response;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventWriterConfig;
@@ -31,7 +32,7 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 import java.util.UUID;
 
 public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
@@ -48,15 +49,70 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     private int eventCount = 0;
     private ByteBuffer timestampAndPayload;
     // -- Additional measurements
-    private long stateChangedOpenMs;
-    private long stateChangedCommittingMs;
-    private long statedChangedCommittedMs;
+    private long noneToOpenStartEpoch;
+    private long noneToOpenEndEpoch;
+
+    private ExecutorService executorService;
+
+    /**
+     * TODO: We must create thread pool with N tasks, N = committing transactions.
+     * Thread pool must check statuses of them in non-blocking fashion.
+     * We might have a transaction queue. We'd go through the queue and check the status, remove from the queue COMMITTED transactions afterwards.
+     */
+    public static class PollingJob implements Callable<Void> {
+        private Transaction<ByteBuffer> transaction;
+        private final long noneToOpenStartEpoch;
+        private final long noneToOpenEndEpoch;
+        private final long commitFinishedEpoch;
+
+//        new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitFinishedEpoch, this.transaction)
+        public PollingJob(final long noneToOpenStartEpoch, final long noneToOpenEndEpoch, final long commitFinishedEpoch, Transaction transaction) {
+            this.noneToOpenStartEpoch = noneToOpenStartEpoch;
+            this.noneToOpenEndEpoch = noneToOpenEndEpoch;
+            this.commitFinishedEpoch = commitFinishedEpoch;
+            this.transaction = transaction;
+        }
+
+        @Override
+        // TODO: Scheduled feature? If not committed - return
+        public Void call() throws Exception {
+
+            final long committedFinishedEpoch = getTimeStatusReached(this.transaction, Transaction.Status.COMMITTED);
+            // NONE <-> OPEN
+            final long durationNoneToOpenMs = (this.noneToOpenEndEpoch - this.noneToOpenStartEpoch) / (long) 1000000;
+            // OPEN <-> COMMITTING
+            final long durationOpenToCommittingMs = (this.commitFinishedEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
+            // COMMITTING <-> COMMITTED
+            final long durationCommittingToCommittedMs = (committedFinishedEpoch - this.commitFinishedEpoch) / (long) 1000000;
+
+            PravegaBenchmarkTransactionProducer.log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + durationNoneToOpenMs +
+                    "---COMMITTING---" + durationOpenToCommittingMs + "---COMMITTED---" +
+                    durationCommittingToCommittedMs + "---EPOCH---" + System.currentTimeMillis());
+        }
+
+        /**
+         * Ensures @param transaction reached given @param status
+         * @return system time when given status had been reached.
+         */
+        private long getTimeStatusReached(Transaction transaction, Transaction.Status status) {
+            while(transaction.checkStatus() != status) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    return 0;
+                }
+            }
+            return System.nanoTime();
+        }
+    }
 
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
             boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
 
         final String writerId = UUID.randomUUID().toString();
+        this.executorService = Executors.newFixedThreadPool(30);
         transactionWriter = clientFactory.createTransactionalEventWriter(writerId, streamName,
                 new ByteBufferSerializer(),
                 EventWriterConfig.builder().enableConnectionPooling(enableConnectionPooling).build());
@@ -68,13 +124,10 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
             if (transaction == null) {
-                final long txnBeginEpoch = System.nanoTime();
+                this.noneToOpenStartEpoch = System.nanoTime();
                 transaction = transactionWriter.beginTxn();
                 // beginTxn() is Synchronous => do not wait for status OPEN implicitly
-                final long stateChangedOpenEpoch = System.nanoTime();
-                this.stateChangedOpenMs = (stateChangedOpenEpoch - txnBeginEpoch) / (long) 1000000;
-                // Start timer for OPEN <-> COMMITTING
-                this.stateChangedCommittingMs = stateChangedOpenEpoch;
+                this.noneToOpenEndEpoch = System.nanoTime();
             }
             if (includeTimestampInEvent) {
                 if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
@@ -91,33 +144,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 eventCount = 0;
                 transaction.commit();
                 final long commitFinishedEpoch = System.nanoTime();
-                final long committingStartEpoch = this.stateChangedCommittingMs;
-                final long stateChangeDuratonNullToOpen = this.stateChangedOpenMs;
-
-                // Run measurement of COMMIT <-> COMMITTED in separate thread
-                Thread committedMeasurement = new Thread(new Runnable() {
-                    private long nullToOpenDurationMs;
-                    private long commitFinished;
-                    private long committingStart;
-                    private Transaction<ByteBuffer> txn;
-                    @Override
-                    public void run() {
-                        this.nullToOpenDurationMs = stateChangeDuratonNullToOpen;
-                        this.commitFinished = commitFinishedEpoch;
-                        this.committingStart = committingStartEpoch;
-                        this.txn = transaction;
-                        final long committedStatusReceivedEpoch = getTimeStatusReached(this.txn, Transaction.Status.COMMITTED);
-                        // Measure OPEN<->COMMITTING
-                        final long committingTimeMs = (commitFinishedEpoch - this.committingStart) / (long) 1000000;
-                        // Measure COMMITTING <-> COMMITTED in milliseconds
-                        final long committedTimeEpoch = (committedStatusReceivedEpoch - this.commitFinished) / (long) 1000000;
-
-                        log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + this.nullToOpenDurationMs +
-                                "---COMMITTING---" + committingTimeMs + "---COMMITTED---" +
-                                committedTimeEpoch + "---EPOCH---" + System.currentTimeMillis());
-                    }
-                });
-                committedMeasurement.start();
+                this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitFinishedEpoch, this.transaction));
 
                 transaction = null;
             }
@@ -138,6 +165,8 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
 
     @Override
     public void close() throws Exception {
+        this.executorService.shutdown();
+        executorService.awaitTermination(30, TimeUnit.MILLISECONDS);
         synchronized (this) {
             if (transaction != null) {
                 transaction.abort();
@@ -147,19 +176,4 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         transactionWriter.close();
     }
 
-    /**
-     * Ensures @param transaction reached given @param status
-     * @return system time when given status had been reached.
-     */
-    private long getTimeStatusReached(Transaction transaction, Transaction.Status status) {
-        while(transaction.checkStatus() != status) {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                return 0;
-            }
-        }
-        return System.nanoTime();
-    }
 }
