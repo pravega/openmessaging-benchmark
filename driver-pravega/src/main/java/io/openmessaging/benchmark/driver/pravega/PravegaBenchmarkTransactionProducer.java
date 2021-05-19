@@ -18,7 +18,6 @@
  */
 package io.openmessaging.benchmark.driver.pravega;
 
-import com.squareup.okhttp.Response;
 import io.openmessaging.benchmark.driver.BenchmarkProducer;
 import io.pravega.client.EventStreamClientFactory;
 import io.pravega.client.stream.EventWriterConfig;
@@ -65,7 +64,6 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         private final long noneToOpenEndEpoch;
         private final long commitFinishedEpoch;
 
-//        new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitFinishedEpoch, this.transaction)
         public PollingJob(final long noneToOpenStartEpoch, final long noneToOpenEndEpoch, final long commitFinishedEpoch, Transaction transaction) {
             this.noneToOpenStartEpoch = noneToOpenStartEpoch;
             this.noneToOpenEndEpoch = noneToOpenEndEpoch;
@@ -88,6 +86,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             PravegaBenchmarkTransactionProducer.log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + durationNoneToOpenMs +
                     "---COMMITTING---" + durationOpenToCommittingMs + "---COMMITTED---" +
                     durationCommittingToCommittedMs + "---EPOCH---" + System.currentTimeMillis());
+            return null;
         }
 
         /**
