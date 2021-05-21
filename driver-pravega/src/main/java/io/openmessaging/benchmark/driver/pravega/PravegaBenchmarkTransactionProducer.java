@@ -63,10 +63,13 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         private final long noneToOpenStartEpoch;
         private final long noneToOpenEndEpoch;
         private final long commitFinishedEpoch;
+        private final long commitProcessStartEpoch;
+//                this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
 
-        public PollingJob(final long noneToOpenStartEpoch, final long noneToOpenEndEpoch, final long commitFinishedEpoch, Transaction transaction) {
+        public PollingJob(final long noneToOpenStartEpoch, final long noneToOpenEndEpoch, final long commitProcessStartEpoch, final long commitFinishedEpoch, Transaction transaction) {
             this.noneToOpenStartEpoch = noneToOpenStartEpoch;
             this.noneToOpenEndEpoch = noneToOpenEndEpoch;
+            this.commitProcessStartEpoch = commitProcessStartEpoch;
             this.commitFinishedEpoch = commitFinishedEpoch;
             this.transaction = transaction;
         }
@@ -78,14 +81,18 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             final long committedFinishedEpoch = getTimeStatusReached(this.transaction, Transaction.Status.COMMITTED);
             // NONE <-> OPEN
             final long durationNoneToOpenMs = (this.noneToOpenEndEpoch - this.noneToOpenStartEpoch) / (long) 1000000;
-            // OPEN <-> COMMITTING
+            // OPEN <-> COMMITTING (including writes)
             final long durationOpenToCommittingMs = (this.commitFinishedEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
             // COMMITTING <-> COMMITTED
             final long durationCommittingToCommittedMs = (committedFinishedEpoch - this.commitFinishedEpoch) / (long) 1000000;
-
+            // COMMIT SPECIFIC
+            final long commitProcessOnly = (commitFinishedEpoch - commitProcessStartEpoch) / (long) 1000000;
+            // WRITES ONLY
+            final long writeOnlyDurationMs = (commitProcessStartEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
             PravegaBenchmarkTransactionProducer.log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + durationNoneToOpenMs +
                     "---COMMITTING---" + durationOpenToCommittingMs + "---COMMITTED---" +
-                    durationCommittingToCommittedMs + "---EPOCH---" + System.currentTimeMillis());
+                    durationCommittingToCommittedMs + "---EPOCH---" + System.currentTimeMillis() +
+                    "---COMMITONLY---" + commitProcessOnly + "---WRITEONLY---" + writeOnlyDurationMs);
             return null;
         }
 
@@ -111,7 +118,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
 
         final String writerId = UUID.randomUUID().toString();
-        this.executorService = Executors.newFixedThreadPool(30);
+        this.executorService = Executors.newFixedThreadPool(15);
         transactionWriter = clientFactory.createTransactionalEventWriter(writerId, streamName,
                 new ByteBufferSerializer(),
                 EventWriterConfig.builder().enableConnectionPooling(enableConnectionPooling).build());
@@ -141,9 +148,10 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             }
             if (++eventCount >= eventsPerTransaction) {
                 eventCount = 0;
+                final long commitProcessStartEpoch = System.nanoTime();
                 transaction.commit();
                 final long commitFinishedEpoch = System.nanoTime();
-                this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitFinishedEpoch, this.transaction));
+                this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
 
                 transaction = null;
             }
