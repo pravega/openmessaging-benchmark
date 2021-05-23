@@ -34,5 +34,12 @@ Configuration:
       additivity: false
       AppenderRef:
         ref: Console
-        
+
+    Logger:
+      name: io.openmessaging.benchmark.driver.pravega
+        level: debug
+          additivity: false
+          AppenderRef:
+            ref: Console
+
        

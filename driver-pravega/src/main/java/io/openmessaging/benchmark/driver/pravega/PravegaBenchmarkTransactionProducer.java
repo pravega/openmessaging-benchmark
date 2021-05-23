@@ -89,7 +89,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             final long commitProcessOnly = (commitFinishedEpoch - commitProcessStartEpoch) / (long) 1000000;
             // WRITES ONLY
             final long writeOnlyDurationMs = (commitProcessStartEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
-            PravegaBenchmarkTransactionProducer.log.info("Transaction---" + transaction.getTxnId() + "---OPEN---" + durationNoneToOpenMs +
+            PravegaBenchmarkTransactionProducer.log.debug("Transaction---" + transaction.getTxnId() + "---OPEN---" + durationNoneToOpenMs +
                     "---COMMITTING---" + durationOpenToCommittingMs + "---COMMITTED---" +
                     durationCommittingToCommittedMs + "---EPOCH---" + System.currentTimeMillis() +
                     "---COMMITONLY---" + commitProcessOnly + "---WRITEONLY---" + writeOnlyDurationMs);
