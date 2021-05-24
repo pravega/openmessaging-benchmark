@@ -64,7 +64,6 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         private final long noneToOpenEndEpoch;
         private final long commitFinishedEpoch;
         private final long commitProcessStartEpoch;
-//                this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
 
         public PollingJob(final long noneToOpenStartEpoch, final long noneToOpenEndEpoch, final long commitProcessStartEpoch, final long commitFinishedEpoch, Transaction transaction) {
             this.noneToOpenStartEpoch = noneToOpenStartEpoch;
@@ -151,7 +150,14 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 final long commitProcessStartEpoch = System.nanoTime();
                 transaction.commit();
                 final long commitFinishedEpoch = System.nanoTime();
-                this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
+                // BegintTxn(), commit(), write()
+                final long beginCommitDurMs = (this.noneToOpenEndEpoch - this.noneToOpenStartEpoch) / (long) 1000000;
+                final long writeExclusiveDurMs = (commitProcessStartEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
+                final long commitExclusiveDurMs = (commitFinishedEpoch - commitProcessStartEpoch) / (long) 1000000;
+                log.info("---BEGINTXN---" + beginCommitDurMs +
+                        "---WRITE---" + writeExclusiveDurMs + "---COMMITT---" +
+                        commitExclusiveDurMs + "---EPOCH---" + System.currentTimeMillis());
+                // this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
 
                 transaction = null;
             }
