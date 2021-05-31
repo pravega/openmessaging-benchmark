@@ -139,17 +139,21 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 transaction.commit();
                 return CompletableFuture.completedFuture(null);
             }
-            if (includeTimestampInEvent) {
-                if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
-                    timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+            final boolean emptyTxnRequested = (eventsPerTransaction == 0);
+            if (!emptyTxnRequested) {
+                if (includeTimestampInEvent) {
+                    if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
+                        timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
+                    } else {
+                        timestampAndPayload.position(0);
+                    }
+                    timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
+                    writeEvent(key, timestampAndPayload);
                 } else {
-                    timestampAndPayload.position(0);
+                    writeEvent(key, ByteBuffer.wrap(payload));
                 }
-                timestampAndPayload.putLong(System.currentTimeMillis()).put(payload).flip();
-                writeEvent(key, timestampAndPayload);
-            } else {
-                writeEvent(key, ByteBuffer.wrap(payload));
             }
+
             if (++eventCount >= eventsPerTransaction) {
                 eventCount = 0;
                 final long commitProcessStartEpoch = System.nanoTime();
