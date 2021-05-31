@@ -134,6 +134,11 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 // beginTxn() is Synchronous => do not wait for status OPEN implicitly
                 this.noneToOpenEndEpoch = System.nanoTime();
             }
+            if (eventsPerTransaction == 0) {
+                // Handling of empty transactions
+                transaction.commit();
+                return CompletableFuture.completedFuture(null);
+            }
             if (includeTimestampInEvent) {
                 if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
                     timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
@@ -151,13 +156,13 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 transaction.commit();
                 final long commitFinishedEpoch = System.nanoTime();
                 // BegintTxn(), commit(), write()
-                final long beginCommitDurMs = (this.noneToOpenEndEpoch - this.noneToOpenStartEpoch) / (long) 1000000;
-                final long writeExclusiveDurMs = (commitProcessStartEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
-                final long commitExclusiveDurMs = (commitFinishedEpoch - commitProcessStartEpoch) / (long) 1000000;
-                log.info("---BEGINTXN---" + beginCommitDurMs +
-                        "---WRITE---" + writeExclusiveDurMs + "---COMMITT---" +
-                        commitExclusiveDurMs + "---EPOCH---" + System.currentTimeMillis());
-                // this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
+//                final long beginCommitDurMs = (this.noneToOpenEndEpoch - this.noneToOpenStartEpoch) / (long) 1000000;
+//                final long writeExclusiveDurMs = (commitProcessStartEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
+//                final long commitExclusiveDurMs = (commitFinishedEpoch - commitProcessStartEpoch) / (long) 1000000;
+//                log.info("---BEGINTXN---" + beginCommitDurMs +
+//                        "---WRITE---" + writeExclusiveDurMs + "---COMMITT---" +
+//                        commitExclusiveDurMs + "---EPOCH---" + System.currentTimeMillis());
+                 this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
 
                 transaction = null;
             }
