@@ -134,11 +134,6 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 // beginTxn() is Synchronous => do not wait for status OPEN implicitly
                 this.noneToOpenEndEpoch = System.nanoTime();
             }
-            if (eventsPerTransaction == 0) {
-                // Handling of empty transactions
-                transaction.commit();
-                return CompletableFuture.completedFuture(null);
-            }
             final boolean emptyTxnRequested = (eventsPerTransaction == 0);
             if (!emptyTxnRequested) {
                 if (includeTimestampInEvent) {
