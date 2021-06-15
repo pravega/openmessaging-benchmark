@@ -46,6 +46,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     private Transaction<ByteBuffer> transaction;
     private final int eventsPerTransaction;
     private int eventCount = 0;
+    private int txnCount = 0;
     private ByteBuffer timestampAndPayload;
     // -- Additional measurements
     private long noneToOpenStartEpoch;
@@ -158,9 +159,10 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 final long beginCommitDurMs = (this.noneToOpenEndEpoch - this.noneToOpenStartEpoch) / (long) 1000000;
                 final long writeExclusiveDurMs = (commitProcessStartEpoch - this.noneToOpenEndEpoch) / (long) 1000000;
                 final long commitExclusiveDurMs = (commitFinishedEpoch - commitProcessStartEpoch) / (long) 1000000;
+                this.txnCount++;
                 log.info("---BEGINTXN---" + beginCommitDurMs +
                         "---WRITE---" + writeExclusiveDurMs + "---COMMITT---" +
-                        commitExclusiveDurMs + "---EPOCH---" + System.currentTimeMillis());
+                        commitExclusiveDurMs + "---TXN---" + this.txnCount + "---EPOCH---" + System.currentTimeMillis());
 //                 this.executorService.submit(new PollingJob(this.noneToOpenStartEpoch, this.noneToOpenEndEpoch, commitProcessStartEpoch, commitFinishedEpoch, this.transaction));
 
                 transaction = null;
