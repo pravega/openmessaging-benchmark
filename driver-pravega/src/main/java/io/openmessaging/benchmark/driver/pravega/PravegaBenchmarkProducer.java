@@ -46,6 +46,7 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
                 new ByteBufferSerializer(),
                 EventWriterConfig.builder()
                         .enableConnectionPooling(enableConnectionPooling)
+                        .transactionTimeoutTime(120000)
                         .build());
         this.includeTimestampInEvent = includeTimestampInEvent;
     }
