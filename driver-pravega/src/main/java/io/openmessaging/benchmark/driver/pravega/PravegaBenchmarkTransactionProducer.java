@@ -25,6 +25,7 @@ import io.pravega.client.stream.impl.ByteBufferSerializer;
 import io.pravega.client.stream.Transaction;
 import io.pravega.client.stream.TransactionalEventStreamWriter;
 import io.pravega.client.stream.TxnFailedException;
+import org.checkerframework.checker.nullness.Opt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
@@ -63,6 +64,10 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
+            if (this.probeRequested(key)) {
+                // write txn
+                this.probeTransaction(key, payload, this.eventsPerTransaction);
+            }
             if (transaction == null) {
                 transaction = transactionWriter.beginTxn();
             }
@@ -106,5 +111,35 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
             }
         }
         transactionWriter.close();
+    }
+
+    /**
+     * Indicates if producer probe had been requested by OpenMessaging benchmark.
+     * @param key - key provided to the probe.
+     * @return true in case requested event had been created in context of producer probe.
+     */
+    private final boolean probeRequested(Optional<String> key) {
+        // For the expected key, see: LocalWorker.probeProducers()
+        final String expectedKey = "key";
+        return key.isPresent() && key.get().equals(expectedKey);
+    }
+
+    /**
+     * Implements writer probe in case of transaction via populating it with ...
+     * ... the expected amount of events.
+\     */
+    public CompletableFuture<Void> probeTransaction(Optional<String> key, byte[] payload, final int eventsPerTxn) {
+        transaction = transactionWriter.beginTxn();
+        try {
+            // Populate transaction for the probeness
+            for (int i = 0; i< eventsPerTxn; i++) {
+                transaction.writeEvent(key.get(), ByteBuffer.wrap(payload));
+            }
+            transaction.commit();
+        } catch (TxnFailedException e) {
+            throw new RuntimeException("Transaction probe had failed.");
+        }
+        transaction = null;
+        return CompletableFuture.completedFuture(null);
     }
 }
