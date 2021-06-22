@@ -65,7 +65,6 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
             if (this.probeRequested(key)) {
-                // write txn
                 this.probeTransaction(key, payload, this.eventsPerTransaction);
             }
             if (transaction == null) {
@@ -127,12 +126,12 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     /**
      * Implements writer probe in case of transaction via populating it with ...
      * ... the expected amount of events.
-\     */
+     */
     public CompletableFuture<Void> probeTransaction(Optional<String> key, byte[] payload, final int eventsPerTxn) {
         transaction = transactionWriter.beginTxn();
         try {
-            // Populate transaction for the probeness
-            for (int i = 0; i< eventsPerTxn; i++) {
+            // Populate transaction with the sufficient amount of events
+            for (int i = 0; i < eventsPerTxn; i++) {
                 transaction.writeEvent(key.get(), ByteBuffer.wrap(payload));
             }
             transaction.commit();
