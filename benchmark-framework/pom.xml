@@ -178,20 +178,6 @@
 			<version>9.4.8.v20171121</version>
 		</dependency>
 
-		<!-- set GRPC version to be consistent across all transitive dependencies  -->
-		<dependency>
-			<groupId>io.grpc</groupId>
-			<artifactId>grpc-all</artifactId>
-			<version>1.24.2</version>
-		</dependency>
-
-		<!-- set Netty version to be consistent across all transitive dependencies  -->
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-all</artifactId>
-			<version>4.1.50.Final</version>
-		</dependency>
-
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
