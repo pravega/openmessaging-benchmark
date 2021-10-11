@@ -67,7 +67,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 transaction = transactionWriter.beginTxn();
             }
             if (this.probeRequested(key)) {
-                // Populate transaction with "probeness" payload
+                // Populate transaction with payload for preflight probe purposes
                 for (int i = 0; i < this.eventsPerTransaction; i++) {
                     transaction.writeEvent(key.get(), ByteBuffer.wrap(payload));
                 }
