@@ -71,6 +71,7 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 for (int i = 0; i < this.eventsPerTransaction; i++) {
                     transaction.writeEvent(key.get(), ByteBuffer.wrap(payload));
                 }
+                eventCount = this.eventsPerTransaction;
             }
             if (includeTimestampInEvent) {
                 if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
