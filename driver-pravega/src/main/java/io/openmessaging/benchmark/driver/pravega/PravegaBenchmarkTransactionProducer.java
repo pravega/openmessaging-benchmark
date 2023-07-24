@@ -47,9 +47,9 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     private final int eventsPerTransaction;
     private int eventCount = 0;
     private ByteBuffer timestampAndPayload;
-    private final boolean isCustomPayload;
+    private boolean isCustomPayload;
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
-            boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction, boolean isCustomPayload) {
+            boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
 
         final String writerId = UUID.randomUUID().toString();
@@ -58,6 +58,10 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
                 EventWriterConfig.builder().enableConnectionPooling(enableConnectionPooling).build());
         this.eventsPerTransaction = eventsPerTransaction;
         this.includeTimestampInEvent = includeTimestampInEvent;
+    }
+    public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
+                                               boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction, boolean isCustomPayload) {
+        this(streamName, clientFactory, includeTimestampInEvent, enableConnectionPooling, eventsPerTransaction);
         this.isCustomPayload = isCustomPayload;
     }
 

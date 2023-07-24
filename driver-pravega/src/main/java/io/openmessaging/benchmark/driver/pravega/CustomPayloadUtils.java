@@ -17,7 +17,9 @@ public class CustomPayloadUtils {
                 Map<String, Object> jsonPayload = mapper.readValue(payload, Map.class);
                 jsonPayload.put("Timestamp",System.currentTimeMillis());
                 payload = mapper.writeValueAsBytes(jsonPayload);
-                //log.info("customPayload: {}", new String(payload));
+                if(log.isDebugEnabled()) {
+                    log.debug("customPayload: {}", new String(payload));
+                }
             } catch (IOException e) {
                 log.warn("exception occur while customising payload: {}", new String(payload), e);
             }

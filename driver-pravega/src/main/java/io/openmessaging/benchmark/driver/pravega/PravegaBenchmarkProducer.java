@@ -36,11 +36,10 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private final EventStreamWriter<ByteBuffer> writer;
     private final boolean includeTimestampInEvent;
     private ByteBuffer timestampAndPayload;
-    private final boolean isCustomPayload;
+    private boolean isCustomPayload;
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
-                                    boolean enableConnectionPooling,
-                                    boolean isCustomPayload) {
+                                    boolean enableConnectionPooling) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
         writer = clientFactory.createEventWriter(
                 streamName,
@@ -49,7 +48,13 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
                         .enableConnectionPooling(enableConnectionPooling)
                         .build());
         this.includeTimestampInEvent = includeTimestampInEvent;
-        this.isCustomPayload = isCustomPayload;
+    }
+    public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
+                                    boolean includeTimestampInEvent,
+                                    boolean enableConnectionPooling,
+                                    boolean isCustomPayload) {
+       this(streamName, clientFactory, includeTimestampInEvent, enableConnectionPooling);
+       this.isCustomPayload = isCustomPayload;
     }
 
     @Override
