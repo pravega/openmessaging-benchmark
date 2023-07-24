@@ -118,10 +118,10 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         BenchmarkProducer producer = null;
         if (config.enableTransaction) {
             producer = new PravegaBenchmarkTransactionProducer(topic, clientFactory, config.includeTimestampInEvent,
-                    config.writer.enableConnectionPooling, config.eventsPerTransaction);
+                    config.writer.enableConnectionPooling, config.eventsPerTransaction, config.customPayload);
         } else {
             producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
-                    config.writer.enableConnectionPooling);
+                    config.writer.enableConnectionPooling, config.customPayload);
         }
         return CompletableFuture.completedFuture(producer);
     }

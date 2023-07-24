@@ -44,4 +44,5 @@ public class PravegaConfig {
     // By default, streams created for benchmarking will be deleted at the end of the test.
     // Set to false to keep the streams.
     public boolean deleteStreams = true;
+    public boolean customPayload = false;
 }
