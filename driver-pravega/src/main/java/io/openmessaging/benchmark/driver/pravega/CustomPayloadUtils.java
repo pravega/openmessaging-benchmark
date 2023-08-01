@@ -19,18 +19,27 @@
 package io.openmessaging.benchmark.driver.pravega;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * This class is used to customize json payload by updating attributes of json.
+ */
 public class CustomPayloadUtils {
     private static final Logger log = LoggerFactory.getLogger(CustomPayloadUtils.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * @param isCustomPayload custom payload is enabled or not
+     * @param payload static default payload to send to messaging system.
+     * @return customized payload in byte array
+     */
     public static byte[] customizePayload(boolean isCustomPayload, byte[] payload) {
-        if(isCustomPayload && payload!=null && payload.length > 0) {
+        if(isCustomPayload && ArrayUtils.isNotEmpty(payload)) {
             try {
                 Map<String, Object> jsonPayload = mapper.readValue(payload, Map.class);
                 jsonPayload.put("Timestamp",System.currentTimeMillis());
