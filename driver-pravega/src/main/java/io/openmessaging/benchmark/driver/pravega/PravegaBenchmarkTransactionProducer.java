@@ -34,6 +34,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.UUID;
 
+/**
+ * This class is pravega transaction implementation of benchmark producer to produce messages for benchmark framework.
+ */
 public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkProducer.class);
 
@@ -48,6 +51,14 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
     private int eventCount = 0;
     private ByteBuffer timestampAndPayload;
     private boolean isCustomPayload;
+
+    /**
+     * @param streamName name of the pravega stream
+     * @param clientFactory client factory to create pravega writers
+     * @param includeTimestampInEvent flag to include timestamp in the event
+     * @param enableConnectionPooling flag to enable/disable connection pool
+     * @param eventsPerTransaction number of events per transaction
+     */
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
             boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction) {
         log.info("PravegaBenchmarkProducer: BEGIN: streamName={}", streamName);
@@ -59,12 +70,27 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         this.eventsPerTransaction = eventsPerTransaction;
         this.includeTimestampInEvent = includeTimestampInEvent;
     }
+
+    /**
+     * @param streamName name of the pravega stream
+     * @param clientFactory client factory to create pravega writers
+     * @param includeTimestampInEvent flag to include timestamp in the event
+     * @param enableConnectionPooling flag to enable/disable connection pool
+     * @param eventsPerTransaction number of events per transaction
+     * @param isCustomPayload flag to enable/disable custom payload
+     */
     public PravegaBenchmarkTransactionProducer(String streamName, EventStreamClientFactory clientFactory,
                                                boolean includeTimestampInEvent, boolean enableConnectionPooling, int eventsPerTransaction, boolean isCustomPayload) {
         this(streamName, clientFactory, includeTimestampInEvent, enableConnectionPooling, eventsPerTransaction);
         this.isCustomPayload = isCustomPayload;
     }
 
+    /**
+     * Sends async messages to pravega
+     * @param key     the key associated with this message
+     * @param payload the message payload
+     * @return CompletableFuture object to get the state of sent message async
+     */
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
         try {
@@ -103,6 +129,10 @@ public class PravegaBenchmarkTransactionProducer implements BenchmarkProducer {
         }
     }
 
+    /**
+     * Closes pravega event writer and aborts the transaction
+     * @throws Exception
+     */
     @Override
     public void close() throws Exception {
         synchronized (this) {
