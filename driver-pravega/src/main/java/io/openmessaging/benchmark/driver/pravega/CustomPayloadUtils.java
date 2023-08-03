@@ -34,6 +34,10 @@ public class CustomPayloadUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     /**
+     * If isCustomPayload is true, customize the byte array payload by updating json attribute values
+     * like Timestamp to make payload unique for almost each request.
+     * If isCustomPayload is false no change in payload.
+     *
      * @param isCustomPayload custom payload is enabled or not
      * @param payload static default payload to send to messaging system.
      * @return customized payload in byte array
