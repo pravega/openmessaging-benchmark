@@ -17,19 +17,16 @@
 # under the License.
 #
 
+name: custom payload k8s
 
-name: Pravega
-driverClass: io.openmessaging.benchmark.driver.pravega.PravegaBenchmarkDriver
-
-# Pravega client-specific configuration
-client:
-  controllerURI: tcp://localhost:9090
-  scopeName: examples
-
-writer:
-  enableConnectionPooling: False
-
-includeTimestampInEvent: True
-enableStreamAutoScaling: False
-eventsPerSecond: 10000
-customPayload: true
+topics: 1
+partitionsPerTopic: 1
+keyDistributor: "NO_KEY"
+messageSize: 712865
+payloadFile: "payload/custom-payload-k8s.data"
+subscriptionsPerTopic: 1
+consumerPerSubscription: 1
+producersPerTopic: 1
+producerRate: 10000
+consumerBacklogSizeGB: 0
+testDurationMinutes: 15

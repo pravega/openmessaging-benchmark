@@ -30,13 +30,24 @@ import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+
+/**
+ * This class is pravega implementation of benchmark producer to produce messages for benchmark framework.
+ */
 public class PravegaBenchmarkProducer implements BenchmarkProducer {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkProducer.class);
 
     private final EventStreamWriter<ByteBuffer> writer;
     private final boolean includeTimestampInEvent;
     private ByteBuffer timestampAndPayload;
+    private boolean isCustomPayload;
 
+    /**
+     * @param streamName name of the pravega stream
+     * @param clientFactory client factory to create pravega writers
+     * @param includeTimestampInEvent flag to include timestamp in the event
+     * @param enableConnectionPooling flag to enable/disable connection pool
+     */
     public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
                                     boolean includeTimestampInEvent,
                                     boolean enableConnectionPooling) {
@@ -50,8 +61,30 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         this.includeTimestampInEvent = includeTimestampInEvent;
     }
 
+    /**
+     * @param streamName name of the pravega stream
+     * @param clientFactory client factory to create pravega writers
+     * @param includeTimestampInEvent flag to include timestamp in the event
+     * @param enableConnectionPooling flag to enable/disable connection pool
+     * @param isCustomPayload flag to enable/disable custom payload
+     */
+    public PravegaBenchmarkProducer(String streamName, EventStreamClientFactory clientFactory,
+                                    boolean includeTimestampInEvent,
+                                    boolean enableConnectionPooling,
+                                    boolean isCustomPayload) {
+       this(streamName, clientFactory, includeTimestampInEvent, enableConnectionPooling);
+       this.isCustomPayload = isCustomPayload;
+    }
+
+    /**
+     * Sends async messages to pravega
+     * @param key     the key associated with this message
+     * @param payload the message payload
+     * @return CompletableFuture object to get the state of sent message async
+     */
     @Override
     public CompletableFuture<Void> sendAsync(Optional<String> key, byte[] payload) {
+        payload = CustomPayloadUtils.customizePayload(isCustomPayload, payload);
         if (includeTimestampInEvent) {
             if (timestampAndPayload == null || timestampAndPayload.limit() != Long.BYTES + payload.length) {
                 timestampAndPayload = ByteBuffer.allocate(Long.BYTES + payload.length);
@@ -68,6 +101,10 @@ public class PravegaBenchmarkProducer implements BenchmarkProducer {
         return (key.isPresent()) ? writer.writeEvent(key.get(), payload) : writer.writeEvent(payload);
     }
 
+    /**
+     * Closes pravega event writer
+     * @throws Exception
+     */
     @Override
     public void close() throws Exception {
         writer.close();

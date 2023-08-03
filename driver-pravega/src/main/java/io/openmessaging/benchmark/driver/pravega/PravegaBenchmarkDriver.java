@@ -44,6 +44,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * This class implements pravega benchmark driver to create topics, producers and consumers required in benchmark.
+ */
 public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private static final Logger log = LoggerFactory.getLogger(PravegaBenchmarkDriver.class);
 
@@ -57,6 +60,11 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
     private EventStreamClientFactory clientFactory;
     private final List<String> createdTopics = new ArrayList<>();
 
+    /**
+     * @param configurationFile pravega.yml configuration file
+     * @param statsLogger       stats logger to collect stats from benchmark driver
+     * @throws IOException
+     */
     @Override
     public void initialize(File configurationFile, StatsLogger statsLogger) throws IOException {
         config = readConfig(configurationFile);
@@ -83,11 +91,19 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         return name.replaceAll("[^A-Za-z0-9-]", "");
     }
 
+    /**
+     * @return topic name prefix string
+     */
     @Override
     public String getTopicNamePrefix() {
         return "openmessaging-benchmark";
     }
 
+    /**
+     * @param topic name of the topic you want to create
+     * @param partitions number of partitions in a topic
+     * @return
+     */
     @Override
     public CompletableFuture<Void> createTopic(String topic, int partitions) {
         topic = cleanName(topic);
@@ -112,20 +128,30 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         return CompletableFuture.completedFuture(null);
     }
 
+    /**
+     * @param topic name of the topic
+     * @return
+     */
     @Override
     public CompletableFuture<BenchmarkProducer> createProducer(String topic) {
         topic = cleanName(topic);
         BenchmarkProducer producer = null;
         if (config.enableTransaction) {
             producer = new PravegaBenchmarkTransactionProducer(topic, clientFactory, config.includeTimestampInEvent,
-                    config.writer.enableConnectionPooling, config.eventsPerTransaction);
+                    config.writer.enableConnectionPooling, config.eventsPerTransaction, config.customPayload);
         } else {
             producer = new PravegaBenchmarkProducer(topic, clientFactory, config.includeTimestampInEvent,
-                    config.writer.enableConnectionPooling);
+                    config.writer.enableConnectionPooling, config.customPayload);
         }
         return CompletableFuture.completedFuture(producer);
     }
 
+    /**
+     * @param topic name of the topic
+     * @param subscriptionName name of the subscription
+     * @param consumerCallback consumer call back object
+     * @return
+     */
     @Override
     public CompletableFuture<BenchmarkConsumer> createConsumer(String topic, String subscriptionName,
             ConsumerCallback consumerCallback) {
@@ -148,6 +174,10 @@ public class PravegaBenchmarkDriver implements BenchmarkDriver {
         }
     }
 
+    /**
+     * Closes all the context objects of pravega
+     * @throws Exception
+     */
     @Override
     public void close() throws Exception {
         log.info("close: clientConfig={}", clientConfig);
